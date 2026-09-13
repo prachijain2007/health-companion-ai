@@ -83,12 +83,16 @@ export type Database = {
           allergies: string | null
           blood_group: string | null
           created_at: string
+          date_of_birth: string | null
           email: string | null
           full_name: string | null
           gender: string | null
           id: string
           medical_history: string | null
+          medical_id: string | null
+          onboarding_completed: boolean
           phone: string | null
+          specialization: string | null
           user_id: string
         }
         Insert: {
@@ -96,12 +100,16 @@ export type Database = {
           allergies?: string | null
           blood_group?: string | null
           created_at?: string
+          date_of_birth?: string | null
           email?: string | null
           full_name?: string | null
           gender?: string | null
           id?: string
           medical_history?: string | null
+          medical_id?: string | null
+          onboarding_completed?: boolean
           phone?: string | null
+          specialization?: string | null
           user_id: string
         }
         Update: {
@@ -109,12 +117,16 @@ export type Database = {
           allergies?: string | null
           blood_group?: string | null
           created_at?: string
+          date_of_birth?: string | null
           email?: string | null
           full_name?: string | null
           gender?: string | null
           id?: string
           medical_history?: string | null
+          medical_id?: string | null
+          onboarding_completed?: boolean
           phone?: string | null
+          specialization?: string | null
           user_id?: string
         }
         Relationships: []
