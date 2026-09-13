@@ -1,0 +1,4797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TECHCARE AI — Clinical Patient Care</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            ink: "#172033",
+            muted: "#64748b",
+            male: "#2563eb",
+            female: "#ec7fa8",
+            baby: "#7c83fd",
+            tealx: "#0f9f9a",
+            purplex: "#7c3aed",
+            orangex: "#f59e0b"
+          },
+          boxShadow: {
+            soft: "0 10px 35px rgba(15,23,42,.07)",
+            card: "0 4px 18px rgba(15,23,42,.06)"
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", sans-serif;
+      background: #f7f9fc;
+      color: #172033;
+    }
+
+    .sidebar {
+      width: 270px;
+      min-width: 270px;
+    }
+
+    .main-area {
+      min-width: 0;
+    }
+
+    .nav-item {
+      transition: .2s ease;
+    }
+
+    .nav-item:hover {
+      background: #f1f5f9;
+      transform: translateX(2px);
+    }
+
+    .nav-item.active {
+      background: #eef5ff;
+      color: #2563eb;
+      font-weight: 700;
+    }
+
+    .patient-card {
+      transition: .2s ease;
+      cursor: pointer;
+    }
+
+    .patient-card:hover {
+      transform: translateY(-2px);
+    }
+
+    .patient-card.selected {
+      box-shadow: 0 0 0 2px currentColor, 0 10px 25px rgba(15,23,42,.08);
+    }
+
+    .male-theme {
+      --accent: #2563eb;
+      --accent-light: #eff6ff;
+    }
+
+    .female-theme {
+      --accent: #ec7fa8;
+      --accent-light: #fff1f6;
+    }
+
+    .baby-theme {
+      --accent: #7c83fd;
+      --accent-light: #f1f2ff;
+    }
+
+    .accent-text {
+      color: var(--accent);
+    }
+
+    .accent-bg {
+      background: var(--accent);
+    }
+
+    .accent-light {
+      background: var(--accent-light);
+    }
+
+    .pulse-dot {
+      animation: pulse 1.7s infinite;
+    }
+
+    @keyframes pulse {
+      0%,100% { opacity: 1; transform: scale(1); }
+      50% { opacity: .45; transform: scale(1.15); }
+    }
+
+    .wave span {
+      display: inline-block;
+      width: 4px;
+      border-radius: 5px;
+      background: currentColor;
+      animation: wave 1s infinite ease-in-out;
+    }
+
+    .wave span:nth-child(1) { height: 14px; animation-delay: .05s; }
+    .wave span:nth-child(2) { height: 25px; animation-delay: .15s; }
+    .wave span:nth-child(3) { height: 37px; animation-delay: .25s; }
+    .wave span:nth-child(4) { height: 20px; animation-delay: .35s; }
+    .wave span:nth-child(5) { height: 31px; animation-delay: .45s; }
+    .wave span:nth-child(6) { height: 15px; animation-delay: .55s; }
+    .wave span:nth-child(7) { height: 28px; animation-delay: .65s; }
+
+    @keyframes wave {
+      0%,100% { transform: scaleY(.55); }
+      50% { transform: scaleY(1); }
+    }
+
+    .hidden-page {
+      display: none !important;
+    }
+
+    .toast {
+      animation: toastIn .25s ease;
+    }
+
+    @keyframes toastIn {
+      from {
+        transform: translateY(15px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .timeline-line {
+      position: absolute;
+      left: 15px;
+      top: 30px;
+      bottom: -25px;
+      width: 2px;
+      background: #e2e8f0;
+    }
+
+    .body-part {
+      cursor: pointer;
+      transition: .2s;
+    }
+
+    .body-part:hover {
+      opacity: .75;
+      transform: scale(1.03);
+      transform-origin: center;
+    }
+
+    .modal {
+      background: rgba(15,23,42,.45);
+      backdrop-filter: blur(5px);
+    }
+
+    @media (max-width: 1024px) {
+      .sidebar {
+        width: 220px;
+        min-width: 220px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .sidebar {
+        display: none;
+      }
+
+      .mobile-menu {
+        display: block !important;
+      }
+    }
+
+    .mobile-menu {
+      display: none;
+    }
+
+    /* ==========================================================
+       DARK / LIGHT THEME
+       Overrides for the light utility classes used across the app
+       so every existing screen stays readable in dark mode.
+    ========================================================== */
+
+    html.dark body { background: #0b1220; color: #e6ecf7; }
+
+    .dark .bg-white { background: #121b2d !important; }
+    .dark .bg-slate-50 { background: #16203a !important; }
+    .dark .bg-slate-100 { background: #1b2740 !important; }
+    .dark .bg-slate-200 { background: #24314e !important; }
+    .dark .bg-slate-900, .dark .bg-slate-800 { background: #060b16 !important; }
+
+    .dark .text-ink { color: #e6ecf7 !important; }
+    .dark .text-slate-900, .dark .text-slate-800, .dark .text-slate-700 { color: #e6ecf7 !important; }
+    .dark .text-slate-600, .dark .text-slate-500 { color: #b7c3d8 !important; }
+    .dark .text-slate-400, .dark .text-slate-300 { color: #8b99b3 !important; }
+
+    .dark .border-slate-100, .dark .border-slate-200, .dark .border-slate-300 { border-color: #26334f !important; }
+    .dark .divide-slate-100 > * + * { border-color: #26334f !important; }
+
+    .dark .bg-red-50 { background: #3a1417 !important; }
+    .dark .bg-green-50, .dark .bg-emerald-50 { background: #0f2a1d !important; }
+    .dark .bg-yellow-50, .dark .bg-amber-50 { background: #33260a !important; }
+    .dark .bg-blue-50, .dark .bg-indigo-50 { background: #12203f !important; }
+    .dark .bg-pink-50, .dark .bg-rose-50 { background: #33141f !important; }
+    .dark .bg-purple-50, .dark .bg-violet-50 { background: #221436 !important; }
+    .dark .bg-teal-50, .dark .bg-cyan-50 { background: #0a2a2b !important; }
+    .dark .bg-orange-50 { background: #35200a !important; }
+
+    .dark .text-red-600, .dark .text-red-700 { color: #ff8b8b !important; }
+    .dark .text-green-600, .dark .text-green-700, .dark .text-emerald-600 { color: #6fdca0 !important; }
+    .dark .text-yellow-600, .dark .text-yellow-700, .dark .text-amber-600 { color: #f5cd5a !important; }
+    .dark .text-blue-600, .dark .text-blue-700 { color: #7fb0ff !important; }
+
+    .dark .nav-item:hover { background: #1b2740; }
+    .dark .nav-item.active { background: #16264a; color: #7fb0ff; }
+    .dark .timeline-line { background: #26334f; }
+    .dark .shadow-soft, .dark .shadow-card { box-shadow: 0 10px 30px rgba(0,0,0,.45); }
+    .dark input, .dark select, .dark textarea { background: #16203a !important; color: #e6ecf7 !important; }
+    .dark table thead { background: #16203a !important; }
+
+    /* ==========================================================
+       INSTANT HELP — emergency palette (lightly dark, high contrast)
+    ========================================================== */
+
+    .ih-card { border-left: 6px solid var(--ih); transition: .2s ease; }
+    .ih-card:hover { transform: translateY(-3px); }
+    .ih-critical { --ih: #b91c1c; --ih-soft: #fdeaea; --ih-soft-dark: #3a1417; }
+    .ih-urgent   { --ih: #a16207; --ih-soft: #fdf4e0; --ih-soft-dark: #33260a; }
+    .ih-stable   { --ih: #15803d; --ih-soft: #e7f6ec; --ih-soft-dark: #0f2a1d; }
+    .ih-accent { color: var(--ih); }
+    .ih-chip { background: var(--ih-soft); color: var(--ih); }
+    .dark .ih-chip { background: var(--ih-soft-dark); }
+    .dark .ih-critical { --ih: #f87171; }
+    .dark .ih-urgent { --ih: #fbbf24; }
+    .dark .ih-stable { --ih: #4ade80; }
+    .ih-bar { background: var(--ih); }
+  </style>
+</head>
+
+<body>
+
+<div id="app" class="min-h-screen flex">
+
+  <!-- ========================================================= -->
+  <!-- SIDEBAR -->
+  <!-- ========================================================= -->
+
+  <aside class="sidebar bg-white border-r border-slate-200 min-h-screen flex flex-col">
+
+    <!-- BRAND -->
+    <div class="px-6 py-6 border-b border-slate-100">
+
+      <div class="flex items-center gap-3">
+
+        <!-- Stethoscope + AI logo -->
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 via-indigo-500 to-teal-400 flex items-center justify-center shadow-lg">
+          <svg width="30" height="30" viewBox="0 0 64 64" fill="none">
+            <path d="M17 10v17c0 9 7 16 16 16s16-7 16-16V10"
+                  stroke="white" stroke-width="5" stroke-linecap="round"/>
+            <path d="M17 10H11M47 10H53"
+                  stroke="white" stroke-width="5" stroke-linecap="round"/>
+            <path d="M33 43v7c0 7 6 11 13 11s12-4 12-11v-3"
+                  stroke="white" stroke-width="5" stroke-linecap="round"/>
+            <circle cx="58" cy="43" r="4" fill="#a7f3d0"/>
+            <circle cx="26" cy="24" r="2.5" fill="#bfdbfe"/>
+            <circle cx="34" cy="20" r="2.5" fill="#bfdbfe"/>
+            <circle cx="42" cy="24" r="2.5" fill="#bfdbfe"/>
+          </svg>
+        </div>
+
+        <div>
+          <div class="text-2xl font-black tracking-tight">TECHCARE AI</div>
+          <div class="text-[11px] text-slate-400 font-semibold tracking-wider">
+            SMART CLINICAL CARE
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Current patient -->
+      <div id="sidebarPatient" class="mt-5 p-3 rounded-2xl bg-slate-50 border border-slate-100">
+      </div>
+
+    </div>
+
+
+    <!-- NAVIGATION -->
+    <nav class="flex-1 px-4 py-5 overflow-y-auto">
+
+      <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-3 mb-2">
+        Workspace
+      </div>
+
+      <button class="nav-item active w-full flex items-center gap-3 px-3 py-3 rounded-xl mb-1 text-left"
+              data-page="dashboard">
+        <span>⌂</span>
+        <span>Dashboard</span>
+      </button>
+
+      <button class="nav-item w-full flex items-center gap-3 px-3 py-3 rounded-xl mb-1 text-left"
+              data-page="intake">
+        <span>🎙</span>
+        <span>AI Case Intake</span>
+      </button>
+
+      <button class="nav-item w-full flex items-center gap-3 px-3 py-3 rounded-xl mb-1 text-left"
+              data-page="case">
+        <span>▣</span>
+        <span>Clinical Case</span>
+      </button>
+
+      <button class="nav-item w-full flex items-center gap-3 px-3 py-3 rounded-xl mb-1 text-left"
+              data-page="review">
+        <span>✓</span>
+        <span>Doctor Review</span>
+      </button>
+
+      <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-3 mt-6 mb-2">
+        Patient Record
+      </div>
+
+      <button class="nav-item w-full flex items-center gap-3 px-3 py-3 rounded-xl mb-1 text-left"
+              data-page="profile">
+        <span>👤</span>
+        <span>Patient Profile</span>
+      </button>
+
+      <button class="nav-item w-full flex items-center gap-3 px-3 py-3 rounded-xl mb-1 text-left"
+              data-page="history">
+        <span>◴</span>
+        <span>History & Timeline</span>
+      </button>
+
+      <button class="nav-item w-full flex items-center gap-3 px-3 py-3 rounded-xl mb-1 text-left"
+              data-page="medications">
+        <span>💊</span>
+        <span>Medication Tracker</span>
+      </button>
+
+      <button class="nav-item w-full flex items-center gap-3 px-3 py-3 rounded-xl mb-1 text-left"
+              data-page="documents">
+        <span>📄</span>
+        <span>Smart Docs / OCR</span>
+      </button>
+
+      <!-- PATIENT SPECIFIC SUBMENU -->
+      <div id="patientSpecificMenu"></div>
+
+      <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-3 mt-6 mb-2">
+        Clinical Support
+      </div>
+
+      <button class="nav-item w-full flex items-center gap-3 px-3 py-3 rounded-xl mb-1 text-left"
+              data-page="instanthelp">
+        <span>⛑</span>
+        <span class="font-bold">Instant Help</span>
+        <span class="ml-auto text-[10px] px-2 py-[2px] rounded-full font-bold"
+              style="background:#fdeaea;color:#b91c1c">LIVE</span>
+      </button>
+
+      <button class="nav-item w-full flex items-center gap-3 px-3 py-3 rounded-xl mb-1 text-left"
+              data-page="risk">
+        <span>◉</span>
+        <span>Risk Screening</span>
+      </button>
+
+      <button class="nav-item w-full flex items-center gap-3 px-3 py-3 rounded-xl mb-1 text-left"
+              data-page="body">
+        <span>♧</span>
+        <span>Body & Symptoms</span>
+      </button>
+
+      <button class="nav-item w-full flex items-center gap-3 px-3 py-3 rounded-xl mb-1 text-left"
+              data-page="doctors">
+        <span>⚕</span>
+        <span>Available Doctors</span>
+      </button>
+
+      <button class="nav-item w-full flex items-center gap-3 px-3 py-3 rounded-xl mb-1 text-left"
+              data-page="ayush">
+        <span>✦</span>
+        <span>Allopathy / AYUSH</span>
+      </button>
+
+      <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-3 mt-6 mb-2">
+        System
+      </div>
+
+      <button onclick="emergency()" class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left text-red-600 hover:bg-red-50">
+        <span>🚨</span>
+        <span>Emergency</span>
+      </button>
+
+      <button class="nav-item w-full flex items-center gap-3 px-3 py-3 rounded-xl mt-1 text-left"
+              data-page="settings">
+        <span>⚙</span>
+        <span>Settings</span>
+      </button>
+
+    </nav>
+
+    <div class="px-5 py-4 border-t border-slate-100">
+      <div class="text-[11px] text-slate-400">
+        TECHCARE AI Prototype
+      </div>
+      <div class="text-xs font-semibold text-slate-600 mt-1">
+        Clinical verification required
+      </div>
+    </div>
+
+  </aside>
+
+
+  <!-- ========================================================= -->
+  <!-- MAIN -->
+  <!-- ========================================================= -->
+
+  <main class="main-area flex-1 min-h-screen">
+
+    <!-- TOP BAR -->
+    <header class="h-[76px] bg-white border-b border-slate-200 flex items-center justify-between px-5 lg:px-8 sticky top-0 z-30">
+
+      <div class="flex items-center gap-3">
+
+        <button class="mobile-menu p-2 rounded-xl bg-slate-100">
+          ☰
+        </button>
+
+        <div>
+          <div id="pageTitle" class="font-black text-xl">
+            Patient Dashboard
+          </div>
+          <div class="text-xs text-slate-400">
+            AI-assisted clinical workflow
+          </div>
+        </div>
+
+      </div>
+
+
+      <div class="flex items-center gap-3">
+
+        <!-- Dark / light mode -->
+        <button id="themeToggle" onclick="toggleTheme()" type="button"
+                title="Switch dark / light mode"
+                class="w-10 h-10 rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-center text-lg">
+          <span id="themeIcon">🌙</span>
+        </button>
+
+        <!-- Authenticated account identity -->
+        <div id="accountIdentity" class="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-2xl px-3 py-2" aria-label="Signed-in account">
+          <div id="accountAvatar" class="w-9 h-9 rounded-xl flex items-center justify-center font-black text-white bg-teal-600">··</div>
+          <div class="text-left hidden sm:block max-w-[180px]">
+            <div id="accountName" class="text-sm font-bold truncate">Loading profile…</div>
+            <div id="accountMeta" class="text-[11px] text-slate-400 truncate">Secure account</div>
+          </div>
+        </div>
+
+        <button id="headerSignOut" type="button"
+                class="h-10 px-4 rounded-xl bg-slate-950 text-white text-sm font-bold flex items-center gap-2 transition hover:bg-slate-800 active:scale-[.98]">
+          <span aria-hidden="true">↪</span>
+          <span class="hidden sm:inline">Log Out</span>
+        </button>
+
+        <!-- Doctor is dynamically patient-specific -->
+        <div id="topDoctor"
+             class="hidden md:flex items-center gap-3 bg-white border border-slate-200 rounded-2xl px-3 py-2">
+
+        </div>
+
+      </div>
+
+    </header>
+
+
+    <!-- PAGE CONTAINER -->
+    <div id="pageContainer" class="p-5 lg:p-8 max-w-[1500px] mx-auto">
+
+      <!-- ===================================================== -->
+      <!-- INSTANT HELP -->
+      <!-- ===================================================== -->
+
+      <section id="page-instanthelp" class="page hidden-page">
+
+        <div class="rounded-3xl p-6 lg:p-7 text-white shadow-soft"
+             style="background:linear-gradient(135deg,#7f1d1d,#b91c1c 55%,#a16207)">
+          <div class="flex flex-wrap items-center gap-4 justify-between">
+            <div>
+              <div class="text-[11px] font-bold tracking-widest opacity-80">INSTANT HELP</div>
+              <div class="text-2xl lg:text-3xl font-black mt-1">AI first-aid guidance in seconds</div>
+              <p class="text-sm opacity-90 mt-2 max-w-2xl">
+                Step-by-step actions for life-threatening situations while help is on the way.
+                This is first-aid guidance only — it never replaces emergency services or a doctor.
+              </p>
+            </div>
+            <div class="flex flex-col gap-2">
+              <button onclick="emergency()"
+                      class="px-5 py-3 rounded-2xl bg-white text-red-700 font-black">
+                🚨 Emergency workflow
+              </button>
+              <a href="tel:112"
+                 class="px-5 py-3 rounded-2xl bg-black/25 border border-white/30 text-white font-bold text-center">
+                📞 Call 112 / 108
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-5 flex flex-wrap gap-3 items-center">
+          <input id="instantSearch" oninput="renderInstantHelp()" type="text"
+                 placeholder="Search a condition (heart attack, seizure, stroke…)"
+                 class="flex-1 min-w-[240px] px-4 py-3 rounded-2xl border border-slate-200 bg-white text-sm" />
+          <div class="flex gap-2 flex-wrap" id="instantFilters"></div>
+        </div>
+
+        <div id="instantHelpGrid" class="grid md:grid-cols-2 xl:grid-cols-3 gap-5 mt-5"></div>
+
+        <div class="mt-6 rounded-3xl bg-white border border-slate-200 p-5 shadow-card">
+          <div class="font-black">Golden rules for any emergency</div>
+          <div class="grid md:grid-cols-3 gap-4 mt-4 text-sm">
+            <div class="rounded-2xl p-4 ih-card ih-critical ih-chip">
+              <div class="font-bold ih-accent">1 · Make it safe</div>
+              <p class="mt-1">Remove danger, keep the area clear and stay calm. Do not move a collapsed person unless they are in danger.</p>
+            </div>
+            <div class="rounded-2xl p-4 ih-card ih-urgent ih-chip">
+              <div class="font-bold ih-accent">2 · Call for help</div>
+              <p class="mt-1">Dial 112 / 108 early. Put the phone on speaker so you can follow instructions while giving care.</p>
+            </div>
+            <div class="rounded-2xl p-4 ih-card ih-stable ih-chip">
+              <div class="font-bold ih-accent">3 · Keep watching</div>
+              <p class="mt-1">Track breathing, response and colour every minute. Note the time symptoms started for the doctor.</p>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ===================================================== -->
+      <!-- DASHBOARD -->
+      <!-- ===================================================== -->
+
+      <section id="page-dashboard" class="page">
+
+        <div id="dashboardHero"></div>
+
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+
+          <div class="bg-white rounded-3xl border border-slate-100 shadow-card p-5">
+            <div class="text-xs text-slate-400 font-semibold">Patient Comfort</div>
+            <div id="comfortValue" class="text-3xl font-black mt-2">8.2/10</div>
+            <div class="text-xs text-emerald-600 mt-1">Comfortable</div>
+          </div>
+
+          <div class="bg-white rounded-3xl border border-slate-100 shadow-card p-5">
+            <div class="text-xs text-slate-400 font-semibold">Anxiety Index</div>
+            <div id="anxietyValue" class="text-3xl font-black mt-2">Low</div>
+            <div class="text-xs text-emerald-600 mt-1">Stable</div>
+          </div>
+
+          <div class="bg-white rounded-3xl border border-slate-100 shadow-card p-5">
+            <div class="text-xs text-slate-400 font-semibold">Risk Screening</div>
+            <div id="dashboardRisk" class="text-3xl font-black mt-2"></div>
+            <div class="text-xs text-slate-400 mt-1">Clinical review suggested</div>
+          </div>
+
+          <div class="bg-white rounded-3xl border border-slate-100 shadow-card p-5">
+            <div class="text-xs text-slate-400 font-semibold">Current Doctor</div>
+            <div id="dashboardDoctor" class="text-lg font-black mt-2"></div>
+            <div id="dashboardDoctorSince" class="text-xs text-slate-400 mt-1"></div>
+          </div>
+
+        </div>
+
+
+        <div class="grid lg:grid-cols-3 gap-6 mt-6">
+
+          <!-- QUICK ACTIONS -->
+          <div class="lg:col-span-2 bg-white rounded-3xl border border-slate-100 shadow-card p-6">
+
+            <div class="flex justify-between items-center">
+              <div>
+                <h2 class="text-lg font-black">Quick Clinical Actions</h2>
+                <p class="text-sm text-slate-400 mt-1">
+                  Work with the selected patient
+                </p>
+              </div>
+            </div>
+
+            <div class="grid sm:grid-cols-2 md:grid-cols-3 gap-3 mt-5">
+
+              <button onclick="showPage('intake')"
+                      class="p-4 rounded-2xl bg-blue-50 text-left hover:bg-blue-100">
+                <div class="text-2xl">🎙</div>
+                <div class="font-bold mt-2">Start AI Intake</div>
+                <div class="text-xs text-slate-500 mt-1">Capture symptoms by voice</div>
+              </button>
+
+              <button onclick="showPage('review')"
+                      class="p-4 rounded-2xl bg-emerald-50 text-left hover:bg-emerald-100">
+                <div class="text-2xl">✓</div>
+                <div class="font-bold mt-2">Doctor Review</div>
+                <div class="text-xs text-slate-500 mt-1">Verify AI-generated case</div>
+              </button>
+
+              <button onclick="showPage('documents')"
+                      class="p-4 rounded-2xl bg-purple-50 text-left hover:bg-purple-100">
+                <div class="text-2xl">📄</div>
+                <div class="font-bold mt-2">Upload Reports</div>
+                <div class="text-xs text-slate-500 mt-1">Smart OCR extraction</div>
+              </button>
+
+              <button onclick="showPage('medications')"
+                      class="p-4 rounded-2xl bg-orange-50 text-left hover:bg-orange-100">
+                <div class="text-2xl">💊</div>
+                <div class="font-bold mt-2">Medication Tracker</div>
+                <div class="text-xs text-slate-500 mt-1">Review current medicines</div>
+              </button>
+
+              <button onclick="showPage('doctors')"
+                      class="p-4 rounded-2xl bg-indigo-50 text-left hover:bg-indigo-100">
+                <div class="text-2xl">⚕</div>
+                <div class="font-bold mt-2">Find Doctor</div>
+                <div class="text-xs text-slate-500 mt-1">AI-assisted matching</div>
+              </button>
+
+              <button onclick="showPage('risk')"
+                      class="p-4 rounded-2xl bg-rose-50 text-left hover:bg-rose-100">
+                <div class="text-2xl">◉</div>
+                <div class="font-bold mt-2">Risk Screening</div>
+                <div class="text-xs text-slate-500 mt-1">Early-warning support</div>
+              </button>
+
+            </div>
+
+          </div>
+
+
+          <!-- INSTANT VIDEO -->
+          <div class="bg-slate-950 text-white rounded-3xl p-6">
+
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="text-lg font-black">Instant Video</div>
+                <div class="text-xs text-slate-400 mt-1">
+                  Doctors ready now
+                </div>
+              </div>
+
+              <div class="w-3 h-3 bg-emerald-400 rounded-full pulse-dot"></div>
+            </div>
+
+            <div id="dashboardInstantDoctors" class="mt-5 space-y-3"></div>
+
+          </div>
+
+        </div>
+
+
+        <!-- CURRENT PATIENT SNAPSHOT -->
+        <div class="bg-white rounded-3xl border border-slate-100 shadow-card p-6 mt-6">
+
+          <div class="flex justify-between items-center">
+            <div>
+              <h2 class="text-lg font-black">Patient Snapshot</h2>
+              <p class="text-sm text-slate-400">
+                Patient-specific clinical information
+              </p>
+            </div>
+
+            <button onclick="showPage('profile')"
+                    class="text-sm font-bold accent-text">
+              View Full Profile →
+            </button>
+          </div>
+
+          <div id="dashboardSnapshot"
+               class="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mt-5">
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- ===================================================== -->
+      <!-- AI INTAKE -->
+      <!-- ===================================================== -->
+
+      <section id="page-intake" class="page hidden-page">
+
+        <div class="grid lg:grid-cols-3 gap-6">
+
+          <div class="lg:col-span-2">
+
+            <div class="bg-white rounded-3xl border border-slate-100 shadow-card p-7">
+
+              <div class="flex justify-between items-start">
+
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-xs font-bold">
+                      AI CASE INTAKE
+                    </span>
+
+                    <span id="languageBadge"
+                          class="px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 text-xs font-bold">
+                      English
+                    </span>
+                  </div>
+
+                  <h1 class="text-3xl font-black mt-4">
+                    Tell us what you're experiencing
+                  </h1>
+
+                  <p id="intakeDescription"
+                     class="text-slate-500 mt-2 max-w-2xl">
+                    Speak naturally. TECHCARE AI will organize the conversation into a structured clinical case for doctor verification.
+                  </p>
+                </div>
+
+              </div>
+
+
+              <!-- LANGUAGE -->
+              <div class="mt-6">
+                <label class="text-xs font-bold text-slate-500">
+                  Patient Language
+                </label>
+
+                <select id="languageSelect"
+                        class="mt-2 w-full md:w-80 border border-slate-200 rounded-xl px-4 py-3 outline-none">
+                  <option value="en">English</option>
+                  <option value="hinglish">Hinglish</option>
+                  <option value="hi">हिन्दी</option>
+                  <option value="mr">मराठी</option>
+                  <option value="ta">தமிழ்</option>
+                  <option value="bn">বাংলা</option>
+                  <option value="te">తెలుగు</option>
+                  <option value="kn">ಕನ್ನಡ</option>
+                </select>
+              </div>
+
+
+              <!-- VOICE -->
+              <div class="mt-8 rounded-3xl bg-slate-950 text-white p-8 text-center">
+
+                <div class="text-sm text-slate-400 mb-4">
+                  Press and speak
+                </div>
+
+                <button id="voiceButton"
+                        class="w-24 h-24 rounded-full bg-white text-slate-950 shadow-2xl flex items-center justify-center mx-auto text-4xl hover:scale-105 transition">
+                  🎙
+                </button>
+
+                <div id="wave"
+                     class="wave flex items-center justify-center gap-2 h-12 mt-5 text-blue-400 opacity-0">
+                  <span></span><span></span><span></span><span></span>
+                  <span></span><span></span><span></span>
+                </div>
+
+                <div id="voiceStatus"
+                     class="text-sm text-slate-400 mt-3">
+                  Ready to listen
+                </div>
+
+              </div>
+
+
+              <!-- TRANSCRIPT -->
+              <div class="mt-6">
+
+                <div class="flex justify-between">
+                  <div class="font-black">Live Transcript</div>
+                  <div class="text-xs text-slate-400">AI extraction enabled</div>
+                </div>
+
+                <div id="transcript"
+                     class="mt-3 min-h-[130px] rounded-2xl bg-slate-50 border border-slate-100 p-5 text-slate-700 leading-7">
+                </div>
+
+              </div>
+
+
+              <!-- EXTRACTION -->
+              <div class="mt-6">
+
+                <div class="font-black">AI-Extracted Clinical Elements</div>
+
+                <div id="extractionTags"
+                     class="flex flex-wrap gap-2 mt-3">
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <!-- INTAKE SUMMARY -->
+          <div class="bg-white rounded-3xl border border-slate-100 shadow-card p-6 h-fit">
+
+            <div class="flex items-center justify-between">
+              <div class="font-black">Live Case Structure</div>
+              <span class="text-xs px-2 py-1 bg-blue-50 text-blue-600 rounded-lg">
+                AI
+              </span>
+            </div>
+
+            <div id="intakeStructure" class="mt-5 space-y-4"></div>
+
+            <button onclick="showPage('review')"
+                    class="w-full mt-6 bg-slate-950 text-white rounded-xl py-3 font-bold">
+              Continue to Doctor Review
+            </button>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- ===================================================== -->
+      <!-- CLINICAL CASE -->
+      <!-- ===================================================== -->
+
+      <section id="page-case" class="page hidden-page">
+
+        <div class="bg-white rounded-3xl border border-slate-100 shadow-card p-7">
+
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+
+            <div>
+              <div class="text-xs text-blue-600 font-bold uppercase tracking-wider">
+                Structured Clinical Case
+              </div>
+              <h1 class="text-3xl font-black mt-2">
+                Case Overview
+              </h1>
+              <p class="text-slate-400 mt-1">
+                AI-organized information requiring clinician verification
+              </p>
+            </div>
+
+            <div id="caseRiskBadge"></div>
+
+          </div>
+
+          <div id="clinicalCaseGrid"
+               class="grid md:grid-cols-2 lg:grid-cols-3 gap-5 mt-7">
+          </div>
+
+        </div>
+
+
+        <div class="grid lg:grid-cols-2 gap-6 mt-6">
+
+          <!-- DIET -->
+          <div class="bg-white rounded-3xl border border-slate-100 shadow-card p-6">
+            <h2 class="font-black text-lg">Diet & Lifestyle</h2>
+            <p class="text-sm text-slate-400 mt-1">
+              Information relevant for clinician review
+            </p>
+
+            <div id="dietCard" class="mt-5"></div>
+          </div>
+
+
+          <!-- OCCUPATION -->
+          <div class="bg-white rounded-3xl border border-slate-100 shadow-card p-6">
+            <h2 class="font-black text-lg">Occupation & Environment</h2>
+            <p class="text-sm text-slate-400 mt-1">
+              Work schedule and environmental context
+            </p>
+
+            <div id="occupationCard" class="mt-5"></div>
+          </div>
+
+        </div>
+
+
+        <!-- FAMILY HISTORY -->
+        <div class="bg-white rounded-3xl border border-slate-100 shadow-card p-6 mt-6">
+
+          <div>
+            <h2 class="font-black text-lg">Family History</h2>
+            <p class="text-sm text-slate-400 mt-1">
+              Hereditary disease and similar-illness history
+            </p>
+          </div>
+
+          <div id="familyHistory"
+               class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-5">
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- ===================================================== -->
+      <!-- PATIENT PROFILE -->
+      <!-- ===================================================== -->
+
+      <section id="page-profile" class="page hidden-page">
+
+        <div id="profileHeader"></div>
+
+        <div class="grid lg:grid-cols-3 gap-6 mt-6">
+
+          <!-- BASIC INFORMATION -->
+          <div class="lg:col-span-2 bg-white rounded-3xl border border-slate-100 shadow-card p-6">
+
+            <h2 class="font-black text-lg">Patient Information</h2>
+
+            <div id="basicProfile"
+                 class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-5">
+            </div>
+
+          </div>
+
+
+          <!-- DOCTOR -->
+          <div id="profileDoctorCard"
+               class="bg-white rounded-3xl border border-slate-100 shadow-card p-6">
+          </div>
+
+        </div>
+
+
+        <!-- PAST HISTORY -->
+        <div class="bg-white rounded-3xl border border-slate-100 shadow-card p-6 mt-6">
+
+          <h2 class="font-black text-lg">Past Medical History</h2>
+
+          <div id="pastHistory"
+               class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-5">
+          </div>
+
+        </div>
+
+
+        <!-- PERSONAL HISTORY -->
+        <div class="bg-white rounded-3xl border border-slate-100 shadow-card p-6 mt-6">
+
+          <h2 class="font-black text-lg">Personal History</h2>
+
+          <div id="personalHistory"
+               class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-5">
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- ===================================================== -->
+      <!-- HISTORY -->
+      <!-- ===================================================== -->
+
+      <section id="page-history" class="page hidden-page">
+
+        <div class="grid lg:grid-cols-3 gap-6">
+
+          <div class="lg:col-span-2 bg-white rounded-3xl border border-slate-100 shadow-card p-6">
+
+            <h2 class="font-black text-lg">Symptom Timeline</h2>
+            <p class="text-sm text-slate-400 mt-1">
+              Chronological patient events
+            </p>
+
+            <div id="timeline" class="mt-7"></div>
+
+          </div>
+
+
+          <div class="bg-white rounded-3xl border border-slate-100 shadow-card p-6">
+
+            <h2 class="font-black text-lg">Treatment With Current Doctor</h2>
+
+            <div id="treatmentDuration"
+                 class="mt-6">
+            </div>
+
+            <div class="mt-6 p-4 rounded-2xl bg-slate-50 text-sm text-slate-500">
+              The duration shown here refers specifically to the selected patient's current doctor.
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- ===================================================== -->
+      <!-- MEDICATIONS -->
+      <!-- ===================================================== -->
+
+      <section id="page-medications" class="page hidden-page">
+
+        <div class="bg-white rounded-3xl border border-slate-100 shadow-card p-6">
+
+          <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+
+            <div>
+              <h1 class="text-2xl font-black">Medication Tracker</h1>
+              <p class="text-sm text-slate-400 mt-1">
+                Patient-specific current medication record
+              </p>
+            </div>
+
+            <button onclick="openMedicationModal()"
+                    class="px-5 py-3 rounded-xl bg-slate-950 text-white font-bold">
+              + Add Medication
+            </button>
+
+          </div>
+
+          <div class="overflow-x-auto mt-6">
+
+            <table class="w-full text-sm">
+
+              <thead>
+                <tr class="border-b border-slate-100 text-left text-slate-400">
+                  <th class="py-3">Medicine</th>
+                  <th>Dose</th>
+                  <th>Frequency</th>
+                  <th>Adherence</th>
+                  <th>Started</th>
+                  <th>Next Dose</th>
+                </tr>
+              </thead>
+
+              <tbody id="medicationTable"></tbody>
+
+            </table>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- ===================================================== -->
+      <!-- SMART DOCS -->
+      <!-- ===================================================== -->
+
+      <section id="page-documents" class="page hidden-page">
+
+        <div class="grid lg:grid-cols-3 gap-6">
+
+          <div class="lg:col-span-2 bg-white rounded-3xl border border-slate-100 shadow-card p-7">
+
+            <div>
+              <div class="text-xs font-bold text-purple-600 uppercase tracking-wider">
+                Smart Docs
+              </div>
+              <h1 class="text-2xl font-black mt-2">
+                Upload medical documents
+              </h1>
+              <p class="text-sm text-slate-400 mt-1">
+                Simulated OCR and structured extraction
+              </p>
+            </div>
+
+            <label for="documentUpload"
+                   class="block mt-7 border-2 border-dashed border-slate-200 rounded-3xl p-12 text-center cursor-pointer hover:bg-slate-50">
+
+              <div class="text-5xl">📄</div>
+              <div class="font-black mt-4">
+                Drop reports here or click to upload
+              </div>
+              <div class="text-sm text-slate-400 mt-2">
+                Lab reports · Prescriptions · Imaging
+              </div>
+
+              <input id="documentUpload"
+                     type="file"
+                     class="hidden"
+                     multiple
+                     accept=".pdf,.jpg,.jpeg,.png" />
+
+            </label>
+
+            <div id="uploadedDocs" class="mt-6 space-y-3"></div>
+
+          </div>
+
+
+          <div class="bg-white rounded-3xl border border-slate-100 shadow-card p-6">
+
+            <h2 class="font-black">Extracted Findings</h2>
+
+            <div id="ocrFindings" class="mt-5 space-y-3"></div>
+
+            <div class="mt-6 p-4 rounded-2xl bg-amber-50 text-amber-700 text-xs">
+              OCR findings are simulated prototype data and must be checked against the original document.
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- ===================================================== -->
+      <!-- FEMALE MENSTRUAL TRACKER -->
+      <!-- ===================================================== -->
+
+      <section id="page-menstrual" class="page hidden-page">
+
+        <div id="menstrualContent"></div>
+
+      </section>
+
+
+      <!-- ===================================================== -->
+      <!-- BABY VACCINATION TRACKER -->
+      <!-- ===================================================== -->
+
+      <section id="page-vaccination" class="page hidden-page">
+
+        <div id="vaccinationContent"></div>
+
+      </section>
+
+
+      <!-- ===================================================== -->
+      <!-- RISK SCREENING -->
+      <!-- ===================================================== -->
+
+      <section id="page-risk" class="page hidden-page">
+
+        <div class="grid lg:grid-cols-3 gap-6">
+
+          <div class="lg:col-span-2 bg-white rounded-3xl border border-slate-100 shadow-card p-7">
+
+            <div class="flex justify-between items-start">
+
+              <div>
+                <div class="text-xs font-bold text-rose-600 uppercase tracking-wider">
+                  Early-Warning Support
+                </div>
+                <h1 class="text-2xl font-black mt-2">
+                  Overall Risk Screening
+                </h1>
+                <p class="text-sm text-slate-400 mt-1 max-w-2xl">
+                  Prototype screening support that flags patterns for clinician review.
+                  It does not diagnose disease.
+                </p>
+              </div>
+
+              <div id="riskScoreCircle"
+                   class="w-20 h-20 rounded-full flex items-center justify-center font-black text-xl">
+              </div>
+
+            </div>
+
+            <div id="riskFactors"
+                 class="grid sm:grid-cols-2 gap-4 mt-7">
+            </div>
+
+          </div>
+
+
+          <div class="bg-slate-950 text-white rounded-3xl p-6">
+
+            <div class="text-lg font-black">
+              Suggested Clinician Review
+            </div>
+
+            <div id="riskSuggestions"
+                 class="mt-5 space-y-3">
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- ===================================================== -->
+      <!-- BODY MAP -->
+      <!-- ===================================================== -->
+
+      <section id="page-body" class="page hidden-page">
+
+        <div class="grid lg:grid-cols-2 gap-6">
+
+          <div class="bg-white rounded-3xl border border-slate-100 shadow-card p-7">
+
+            <h1 class="text-2xl font-black">Interactive Symptom Map</h1>
+            <p class="text-sm text-slate-400 mt-1">
+              Select an area to add it to the clinical review.
+            </p>
+
+            <div class="flex justify-center mt-7">
+
+              <svg viewBox="0 0 260 560"
+                   width="280"
+                   height="560">
+
+                <!-- head -->
+                <circle class="body-part"
+                        data-part="Head"
+                        cx="130"
+                        cy="55"
+                        r="35"
+                        fill="#dbeafe"/>
+
+                <!-- neck -->
+                <rect class="body-part"
+                      data-part="Neck"
+                      x="113"
+                      y="87"
+                      width="34"
+                      height="35"
+                      rx="10"
+                      fill="#dbeafe"/>
+
+                <!-- torso -->
+                <path class="body-part"
+                      data-part="Chest / Abdomen"
+                      d="M88 115 Q130 100 172 115 L188 280 Q130 300 72 280Z"
+                      fill="#bfdbfe"/>
+
+                <!-- left arm -->
+                <path class="body-part"
+                      data-part="Left Arm"
+                      d="M88 120 L55 145 L25 255 L48 263 L88 185Z"
+                      fill="#bfdbfe"/>
+
+                <!-- right arm -->
+                <path class="body-part"
+                      data-part="Right Arm"
+                      d="M172 120 L205 145 L235 255 L212 263 L172 185Z"
+                      fill="#bfdbfe"/>
+
+                <!-- left leg -->
+                <path class="body-part"
+                      data-part="Left Leg"
+                      d="M78 275 L122 280 L115 470 L85 470Z"
+                      fill="#93c5fd"/>
+
+                <!-- right leg -->
+                <path class="body-part"
+                      data-part="Right Leg"
+                      d="M138 280 L182 275 L175 470 L145 470Z"
+                      fill="#93c5fd"/>
+
+                <!-- feet -->
+                <rect class="body-part"
+                      data-part="Left Foot"
+                      x="75"
+                      y="465"
+                      width="42"
+                      height="20"
+                      rx="8"
+                      fill="#bfdbfe"/>
+
+                <rect class="body-part"
+                      data-part="Right Foot"
+                      x="143"
+                      y="465"
+                      width="42"
+                      height="20"
+                      rx="8"
+                      fill="#bfdbfe"/>
+
+              </svg>
+
+            </div>
+
+          </div>
+
+
+          <div class="bg-white rounded-3xl border border-slate-100 shadow-card p-7">
+
+            <h2 class="font-black text-lg">Selected Symptoms</h2>
+
+            <div id="selectedBodyParts"
+                 class="mt-5 flex flex-wrap gap-2">
+            </div>
+
+            <div class="mt-7">
+
+              <label class="text-xs font-bold text-slate-500">
+                Additional notes
+              </label>
+
+              <textarea
+                class="w-full mt-2 border border-slate-200 rounded-2xl p-4 h-32 outline-none"
+                placeholder="Describe severity, timing or other context..."></textarea>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- ===================================================== -->
+      <!-- DOCTORS -->
+      <!-- ===================================================== -->
+
+      <section id="page-doctors" class="page hidden-page">
+
+        <div class="bg-white rounded-3xl border border-slate-100 shadow-card p-6">
+
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+
+            <div>
+              <div class="text-xs font-bold text-indigo-600 uppercase tracking-wider">
+                Care Network
+              </div>
+              <h1 class="text-2xl font-black mt-2">
+                Available Doctors
+              </h1>
+              <p class="text-sm text-slate-400 mt-1">
+                Doctor matching is a prototype recommendation feature.
+              </p>
+            </div>
+
+            <div class="flex flex-wrap gap-2">
+
+              <select id="specializationFilter"
+                      class="border border-slate-200 rounded-xl px-3 py-2 text-sm">
+                <option value="all">All Specializations</option>
+                <option>Gastroenterology</option>
+                <option>General Medicine</option>
+                <option>Gynecology</option>
+                <option>Orthopedics</option>
+                <option>Ayurveda</option>
+                <option>Pediatrics</option>
+              </select>
+
+              <select id="doctorLanguageFilter"
+                      class="border border-slate-200 rounded-xl px-3 py-2 text-sm">
+                <option value="all">All Languages</option>
+                <option>English</option>
+                <option>Hindi</option>
+                <option>Hinglish</option>
+                <option>Marathi</option>
+                <option>Tamil</option>
+                <option>Telugu</option>
+              </select>
+
+              <select id="consultationFilter"
+                      class="border border-slate-200 rounded-xl px-3 py-2 text-sm">
+                <option value="all">All Consultation Types</option>
+                <option>Video</option>
+                <option>Audio</option>
+                <option>In-person</option>
+              </select>
+
+            </div>
+
+          </div>
+
+
+          <!-- AI MATCH -->
+          <div id="aiDoctorMatch"
+               class="mt-6 p-5 rounded-2xl bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-100">
+          </div>
+
+
+          <!-- INSTANT VIDEO -->
+          <div class="mt-7">
+
+            <div class="flex items-center gap-2">
+              <div class="w-2.5 h-2.5 bg-emerald-500 rounded-full pulse-dot"></div>
+              <h2 class="font-black">
+                Doctors Always Ready for Instant Video Call
+              </h2>
+            </div>
+
+            <div id="instantDoctors"
+                 class="grid md:grid-cols-2 xl:grid-cols-4 gap-4 mt-4">
+            </div>
+
+          </div>
+
+
+          <div class="border-t border-slate-100 mt-7 pt-7">
+
+            <h2 class="font-black">All Doctors</h2>
+
+            <div id="doctorGrid"
+                 class="grid md:grid-cols-2 xl:grid-cols-3 gap-5 mt-4">
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- ===================================================== -->
+      <!-- AYUSH -->
+      <!-- ===================================================== -->
+
+      <section id="page-ayush" class="page hidden-page">
+
+        <div class="bg-white rounded-3xl border border-slate-100 shadow-card p-7">
+
+          <div class="flex items-center justify-between">
+
+            <div>
+              <h1 class="text-2xl font-black">Care System</h1>
+              <p class="text-sm text-slate-400 mt-1">
+                Select the clinical framework being used for the consultation.
+              </p>
+            </div>
+
+            <div class="flex bg-slate-100 rounded-xl p-1">
+              <button id="allopathyBtn"
+                      onclick="setCareSystem('Allopathy')"
+                      class="px-5 py-2 rounded-lg bg-white shadow-sm font-bold">
+                Allopathy
+              </button>
+
+              <button id="ayushBtn"
+                      onclick="setCareSystem('AYUSH')"
+                      class="px-5 py-2 rounded-lg font-bold text-slate-500">
+                AYUSH
+              </button>
+            </div>
+
+          </div>
+
+
+          <div id="ayushFields"
+               class="hidden grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-8">
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- ===================================================== -->
+      <!-- REVIEW -->
+      <!-- ===================================================== -->
+
+      <section id="page-review" class="page hidden-page">
+
+        <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex gap-3">
+
+          <div class="text-xl">⚠️</div>
+
+          <div>
+            <div class="font-black text-amber-900">
+              Clinical Verification Required
+            </div>
+
+            <div class="text-sm text-amber-800 mt-1">
+              AI-generated information is provided for clinical verification only.
+            </div>
+          </div>
+
+        </div>
+
+
+        <div class="grid lg:grid-cols-3 gap-6 mt-6">
+
+          <div class="lg:col-span-2 bg-white rounded-3xl border border-slate-100 shadow-card p-7">
+
+            <div class="flex justify-between items-start">
+
+              <div>
+                <div class="text-xs font-bold text-emerald-600 uppercase tracking-wider">
+                  Doctor Review
+                </div>
+
+                <h1 class="text-2xl font-black mt-2">
+                  AI Case Summary
+                </h1>
+              </div>
+
+              <div id="reviewStatus"
+                   class="px-3 py-1 rounded-full bg-amber-50 text-amber-700 text-xs font-bold">
+                Pending Review
+              </div>
+
+            </div>
+
+
+            <div id="reviewSummary"
+                 class="mt-7 space-y-5">
+            </div>
+
+
+            <div class="mt-7 pt-6 border-t border-slate-100">
+
+              <div class="font-black">
+                Raw / Audio Transcript
+              </div>
+
+              <div id="reviewTranscript"
+                   class="mt-3 p-5 rounded-2xl bg-slate-50 text-sm leading-7 text-slate-600">
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <!-- VERIFICATION -->
+          <div class="bg-white rounded-3xl border border-slate-100 shadow-card p-6">
+
+            <h2 class="font-black">Verification Checklist</h2>
+
+            <div id="verificationChecklist"
+                 class="mt-5 space-y-3">
+            </div>
+
+
+            <div class="mt-7 space-y-3">
+
+              <button onclick="approveReview()"
+                      class="w-full py-3 rounded-xl bg-emerald-600 text-white font-bold">
+                ✓ Approve Case
+              </button>
+
+              <button onclick="editReview()"
+                      class="w-full py-3 rounded-xl bg-slate-100 text-slate-800 font-bold">
+                Edit Case
+              </button>
+
+              <button onclick="flagReview()"
+                      class="w-full py-3 rounded-xl bg-red-50 text-red-600 font-bold">
+                ⚑ Flag for Reassessment
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <div class="grid md:grid-cols-2 gap-4 mt-6">
+
+          <button onclick="exportEMR()"
+                  class="bg-white border border-slate-200 rounded-2xl p-5 text-left hover:bg-slate-50">
+            <div class="text-2xl">↗</div>
+            <div class="font-black mt-2">Export to EMR</div>
+            <div class="text-sm text-slate-400">
+              Prepare structured record for export
+            </div>
+          </button>
+
+          <button onclick="showPage('doctors')"
+                  class="bg-slate-950 text-white rounded-2xl p-5 text-left">
+            <div class="text-2xl">⚕</div>
+            <div class="font-black mt-2">Proceed to Consultation</div>
+            <div class="text-sm text-slate-400">
+              Find or connect with a doctor
+            </div>
+          </button>
+
+        </div>
+
+
+        <div class="mt-6 text-center text-xs text-slate-400">
+          AI-Generated Summary for Clinical Verification Only. No Automated Diagnosis.
+        </div>
+
+      </section>
+
+
+      <!-- ===================================================== -->
+      <!-- SETTINGS -->
+      <!-- ===================================================== -->
+
+      <section id="page-settings" class="page hidden-page">
+
+        <div class="bg-white rounded-3xl border border-slate-100 shadow-card p-7">
+
+          <h1 class="text-2xl font-black">Settings</h1>
+
+          <div class="grid md:grid-cols-2 gap-5 mt-7">
+
+            <div class="p-5 rounded-2xl bg-slate-50">
+              <div class="font-bold">Clinical AI Mode</div>
+              <div class="text-sm text-slate-400 mt-1">
+                AI assists with organization and review.
+              </div>
+              <div class="mt-3 inline-flex px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 text-xs font-bold">
+                Enabled
+              </div>
+            </div>
+
+            <div class="p-5 rounded-2xl bg-slate-50">
+              <div class="font-bold">Patient Data Mode</div>
+              <div class="text-sm text-slate-400 mt-1">
+                Demo patient records are fictional.
+              </div>
+              <div class="mt-3 inline-flex px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-xs font-bold">
+                Prototype
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+    </div>
+
+  </main>
+
+</div>
+
+
+<!-- ========================================================= -->
+<!-- APPOINTMENT MODAL -->
+<!-- ========================================================= -->
+
+<div id="appointmentModal"
+     class="modal hidden fixed inset-0 z-[100] items-center justify-center p-5">
+
+  <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-7">
+
+    <div class="flex justify-between">
+
+      <div>
+        <div class="text-xs font-bold text-blue-600 uppercase">
+          Appointment
+        </div>
+        <h2 class="text-2xl font-black mt-1">
+          Confirm Consultation
+        </h2>
+      </div>
+
+      <button onclick="closeAppointmentModal()"
+              class="w-9 h-9 rounded-xl bg-slate-100">
+        ×
+      </button>
+
+    </div>
+
+    <div id="appointmentContent"
+         class="mt-6">
+    </div>
+
+    <button onclick="confirmAppointment()"
+            class="w-full mt-6 bg-slate-950 text-white rounded-xl py-3 font-bold">
+      Confirm Appointment
+    </button>
+
+  </div>
+
+</div>
+
+
+<!-- ========================================================= -->
+<!-- MEDICATION MODAL -->
+<!-- ========================================================= -->
+
+<div id="medicationModal"
+     class="modal hidden fixed inset-0 z-[100] items-center justify-center p-5">
+
+  <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full p-7">
+
+    <div class="flex justify-between">
+
+      <h2 class="text-xl font-black">
+        Add Medication
+      </h2>
+
+      <button onclick="closeMedicationModal()"
+              class="w-9 h-9 rounded-xl bg-slate-100">
+        ×
+      </button>
+
+    </div>
+
+    <div class="grid sm:grid-cols-2 gap-4 mt-6">
+
+      <input id="medName"
+             class="border border-slate-200 rounded-xl px-4 py-3"
+             placeholder="Medicine name">
+
+      <input id="medDose"
+             class="border border-slate-200 rounded-xl px-4 py-3"
+             placeholder="Dose">
+
+      <input id="medFrequency"
+             class="border border-slate-200 rounded-xl px-4 py-3"
+             placeholder="Frequency">
+
+      <input id="medStart"
+             type="date"
+             class="border border-slate-200 rounded-xl px-4 py-3">
+
+    </div>
+
+    <button onclick="saveMedication()"
+            class="w-full mt-6 bg-blue-600 text-white rounded-xl py-3 font-bold">
+      Add Medication
+    </button>
+
+  </div>
+
+</div>
+
+
+<!-- TOAST -->
+<div id="toastContainer"
+     class="fixed bottom-6 right-6 z-[200] space-y-2">
+</div>
+
+
+<script>
+
+/* ============================================================
+   PATIENT DATA
+============================================================ */
+
+const patients = {
+
+  rahul: {
+    id: "rahul",
+    name: "Rahul Sharma",
+    initials: "RS",
+    gender: "Male",
+    type: "male",
+    age: 45,
+    nationality: "Indian",
+    address: "Sector 45, Gurugram, Haryana",
+
+    doctor: {
+      name: "Dr. Arjun Mehta",
+      specialty: "General Medicine",
+      experience: "15 years",
+      since: "2024-05-15"
+    },
+
+    language: "en",
+
+    chiefComplaints: [
+      "Chronic acidity",
+      "Morning joint stiffness"
+    ],
+
+    duration: "Around 8 months",
+    onset: "Gradual",
+    severity: "Moderate",
+    associated: "Worse after meals",
+
+    past: {
+      surgeries: "No major surgery",
+      accidents: "Minor road accident in 2021",
+      allergy: "Penicillin",
+      otherDoctor: "Orthopedic consultation for joint stiffness"
+    },
+
+    personal: {
+      bmi: "27.1",
+      appearance: "Well-groomed, mildly tired",
+      habits: "Sedentary weekdays",
+      addictions: "Occasional smoking",
+      marital: "Married",
+      home: "Urban residential environment",
+      workplace: "Mostly desk-based"
+    },
+
+    diet: {
+      type: "Mixed diet",
+      meals: "3 meals/day, late dinner",
+      hydration: "Approx. 2 L/day",
+      caffeine: "3 cups/day",
+      activity: "Low–moderate",
+      sleep: "6–7 hours"
+    },
+
+    occupation: {
+      job: "Finance Manager",
+      schedule: "9:30 AM – 7:00 PM",
+      exposure: "Long screen time",
+      stress: "Moderate"
+    },
+
+    family: [
+      { condition: "Diabetes", relation: "Father", notes: "Type 2 diabetes" },
+      { condition: "Hypertension", relation: "Father", notes: "On treatment" },
+      { condition: "Similar illness", relation: "Mother", notes: "Acidity episodes" },
+      { condition: "Disorder", relation: "None known", notes: "No known hereditary disorder" },
+      { condition: "Tuberculosis", relation: "None known", notes: "No known family history" },
+      { condition: "Malignancy", relation: "None known", notes: "No known family history" }
+    ],
+
+    medications: [
+      {
+        name: "Pantoprazole",
+        dose: "40 mg",
+        frequency: "Once daily",
+        adherence: "Good",
+        started: "2026-02-10",
+        nextDose: "Tomorrow 8:00 AM"
+      },
+      {
+        name: "Vitamin D3",
+        dose: "60,000 IU",
+        frequency: "Weekly",
+        adherence: "Fair",
+        started: "2026-07-05",
+        nextDose: "Sunday"
+      }
+    ],
+
+    timeline: [
+      ["2026-09-08", "AI intake started", "Patient reported persistent acidity and morning stiffness."],
+      ["2026-08-20", "Orthopedic consultation", "Joint stiffness discussed with another doctor."],
+      ["2026-05-15", "Follow-up", "Continued treatment with current doctor."],
+      ["2024-05-15", "Treatment started", "Began treatment with Dr. Arjun Mehta."]
+    ],
+
+    riskFactors: [
+      ["Family history", "Diabetes + hypertension in first-degree relative", "moderate"],
+      ["Lifestyle", "Sedentary work and limited activity", "moderate"],
+      ["Medication adherence", "One medicine has fair adherence", "low"],
+      ["Symptoms", "Persistent symptoms requiring clinician review", "moderate"]
+    ],
+
+    suggestions: [
+      "Review persistent gastrointestinal symptoms",
+      "Review joint stiffness and previous orthopedic advice",
+      "Review family cardiovascular/metabolic risk",
+      "Discuss lifestyle and medication adherence"
+    ],
+
+    comfort: "8.2/10",
+    anxiety: "Low",
+
+    sampleOCR: [
+      ["HbA1c", "5.9%", "Borderline flag"],
+      ["Blood Pressure", "138/88 mmHg", "Review suggested"],
+      ["Vitamin D", "24 ng/mL", "Low flag"]
+    ]
+  },
+
+
+  priya: {
+    id: "priya",
+    name: "Priya Malhotra",
+    initials: "PM",
+    gender: "Female",
+    type: "female",
+    age: 31,
+    nationality: "Indian",
+    address: "Dwarka, New Delhi",
+
+    doctor: {
+      name: "Dr. Riya Malhotra",
+      specialty: "Gynecology",
+      experience: "10 years",
+      since: "2025-01-10"
+    },
+
+    language: "hinglish",
+
+    chiefComplaints: [
+      "Cycle tracking concern",
+      "Occasional lower abdominal discomfort"
+    ],
+
+    duration: "Around 4 months",
+    onset: "Gradual",
+    severity: "Mild",
+    associated: "Occasional cramps",
+
+    past: {
+      surgeries: "No major surgery",
+      accidents: "None reported",
+      allergy: "No known drug allergy",
+      otherDoctor: "No ongoing treatment with another doctor"
+    },
+
+    personal: {
+      bmi: "23.4",
+      appearance: "Well appearing",
+      habits: "Regular walking",
+      addictions: "None reported",
+      marital: "Married",
+      home: "Urban residential environment",
+      workplace: "Office-based"
+    },
+
+    diet: {
+      type: "Vegetarian",
+      meals: "3 meals/day",
+      hydration: "Approx. 2.2 L/day",
+      caffeine: "1 cup/day",
+      activity: "Moderate",
+      sleep: "7–8 hours"
+    },
+
+    occupation: {
+      job: "Product Designer",
+      schedule: "10:00 AM – 6:30 PM",
+      exposure: "Mostly desk-based",
+      stress: "Moderate"
+    },
+
+    family: [
+      { condition: "Diabetes", relation: "Mother", notes: "Type 2 diabetes" },
+      { condition: "Hypertension", relation: "None known", notes: "No known history" },
+      { condition: "Similar illness", relation: "Mother", notes: "Occasional menstrual irregularity" },
+      { condition: "Disorder", relation: "None known", notes: "No known hereditary disorder" },
+      { condition: "Tuberculosis", relation: "None known", notes: "No known history" },
+      { condition: "Malignancy", relation: "Grandmother", notes: "History of breast cancer" }
+    ],
+
+    medications: [
+      {
+        name: "Iron supplement",
+        dose: "As prescribed",
+        frequency: "Once daily",
+        adherence: "Good",
+        started: "2026-06-01",
+        nextDose: "Tonight"
+      }
+    ],
+
+    menstrual: {
+      lmp: "2026-08-18",
+      cycleLength: "29 days",
+      periodDuration: "4–5 days",
+      regularity: "Usually regular",
+      symptoms: "Mild cramps, fatigue on day 1",
+      nextPeriod: "2026-09-16"
+    },
+
+    timeline: [
+      ["2026-09-05", "Follow-up", "Discussed menstrual tracking."],
+      ["2026-08-18", "Period started", "LMP recorded."],
+      ["2026-07-20", "Consultation", "Routine gynecology follow-up."],
+      ["2025-01-10", "Treatment started", "Began treatment with Dr. Riya Malhotra."]
+    ],
+
+    riskFactors: [
+      ["Family history", "Family history requiring routine review", "moderate"],
+      ["Symptoms", "Intermittent discomfort", "low"],
+      ["Lifestyle", "Generally active lifestyle", "low"],
+      ["Preventive care", "Routine gynecological follow-up", "low"]
+    ],
+
+    suggestions: [
+      "Continue clinician-reviewed cycle tracking",
+      "Review reported discomfort if persistent or worsening",
+      "Review family history during routine preventive care"
+    ],
+
+    comfort: "9.0/10",
+    anxiety: "Low",
+
+    sampleOCR: [
+      ["Hemoglobin", "12.1 g/dL", "Within demo reference"],
+      ["Vitamin B12", "310 pg/mL", "Review with clinician"],
+      ["BP", "118/76 mmHg", "Within demo reference"]
+    ]
+  },
+
+
+  aarav: {
+    id: "aarav",
+    name: "Aarav Rao",
+    initials: "AR",
+    gender: "Male",
+    type: "baby",
+    age: 2,
+    nationality: "Indian",
+    address: "Kondapur, Hyderabad",
+
+    doctor: {
+      name: "Dr. Aditya Rao",
+      specialty: "Pediatrics",
+      experience: "9 years",
+      since: "2026-01-12"
+    },
+
+    language: "te",
+
+    chiefComplaints: [
+      "Routine pediatric follow-up",
+      "Occasional seasonal cough"
+    ],
+
+    duration: "2 weeks",
+    onset: "Recent",
+    severity: "Mild",
+    associated: "Noisy breathing absent in demo record",
+
+    past: {
+      surgeries: "None",
+      accidents: "None reported",
+      allergy: "No known drug allergy",
+      otherDoctor: "None"
+    },
+
+    personal: {
+      bmi: "Not routinely used here",
+      appearance: "Active and playful",
+      habits: "Age-appropriate activity",
+      addictions: "Not applicable",
+      marital: "Not applicable",
+      home: "Home with parents",
+      workplace: "Not applicable"
+    },
+
+    diet: {
+      type: "Age-appropriate mixed diet",
+      meals: "3 meals + snacks",
+      hydration: "Adequate",
+      caffeine: "None",
+      activity: "High for age",
+      sleep: "10–11 hours"
+    },
+
+    occupation: {
+      job: "Child",
+      schedule: "Age-appropriate routine",
+      exposure: "Home/daycare environment",
+      stress: "Not assessed"
+    },
+
+    family: [
+      { condition: "Diabetes", relation: "Grandparent", notes: "Type 2 diabetes" },
+      { condition: "Hypertension", relation: "None known", notes: "No known history" },
+      { condition: "Similar illness", relation: "None known", notes: "No significant history" },
+      { condition: "Disorder", relation: "None known", notes: "No known hereditary disorder" },
+      { condition: "Tuberculosis", relation: "None known", notes: "No known history" },
+      { condition: "Malignancy", relation: "None known", notes: "No known history" }
+    ],
+
+    medications: [
+      {
+        name: "Pediatric multivitamin",
+        dose: "As prescribed",
+        frequency: "Once daily",
+        adherence: "Good",
+        started: "2026-08-01",
+        nextDose: "Tonight"
+      }
+    ],
+
+    vaccination: [
+      ["BCG", "Completed", "Birth"],
+      ["OPV", "Completed", "Birth"],
+      ["Hepatitis B", "Completed", "Birth"],
+      ["Pentavalent", "Completed", "Infancy"],
+      ["MMR", "Completed", "12 months"],
+      ["DPT Booster", "Due", "Current schedule"],
+      ["Varicella", "Due", "Current schedule"]
+    ],
+
+    timeline: [
+      ["2026-09-07", "Pediatric follow-up", "Routine review."],
+      ["2026-08-01", "Vaccination review", "Immunization record checked."],
+      ["2026-01-12", "Treatment started", "Began care with Dr. Aditya Rao."]
+    ],
+
+    riskFactors: [
+      ["Symptoms", "Mild seasonal cough", "low"],
+      ["Family history", "Limited metabolic family history", "low"],
+      ["Vaccination", "Some schedule items due", "moderate"],
+      ["Lifestyle", "Age-appropriate activity", "low"]
+    ],
+
+    suggestions: [
+      "Review vaccination schedule",
+      "Monitor respiratory symptoms",
+      "Continue age-appropriate preventive pediatric care"
+    ],
+
+    comfort: "9.3/10",
+    anxiety: "Low",
+
+    sampleOCR: [
+      ["Weight", "12.2 kg", "For pediatric trend review"],
+      ["Temperature", "36.8°C", "Within demo reference"],
+      ["Hemoglobin", "11.8 g/dL", "Review with pediatrician"]
+    ]
+  }
+
+};
+
+
+/* ============================================================
+   DOCTORS
+============================================================ */
+
+const doctors = [
+  {
+    name: "Dr. Ananya Kapoor",
+    specialty: "Gastroenterology",
+    experience: "12 years",
+    status: "Available",
+    languages: ["English", "Hindi", "Hinglish"],
+    consultation: ["Video", "Audio"],
+    instant: true
+  },
+  {
+    name: "Dr. Arjun Mehta",
+    specialty: "General Medicine",
+    experience: "15 years",
+    status: "Busy",
+    languages: ["English", "Hindi"],
+    consultation: ["Video", "In-person"],
+    instant: false
+  },
+  {
+    name: "Dr. Riya Malhotra",
+    specialty: "Gynecology",
+    experience: "10 years",
+    status: "Available",
+    languages: ["English", "Hindi", "Hinglish"],
+    consultation: ["Video", "Audio"],
+    instant: true
+  },
+  {
+    name: "Dr. Kabir Shah",
+    specialty: "Orthopedics",
+    experience: "14 years",
+    status: "Available",
+    languages: ["English", "Hindi", "Marathi"],
+    consultation: ["Video", "In-person"],
+    instant: true
+  },
+  {
+    name: "Dr. Meera Iyer",
+    specialty: "Ayurveda",
+    experience: "11 years",
+    status: "Offline",
+    languages: ["English", "Hindi", "Tamil"],
+    consultation: ["Video", "Audio"],
+    instant: false
+  },
+  {
+    name: "Dr. Aditya Rao",
+    specialty: "Pediatrics",
+    experience: "9 years",
+    status: "Available",
+    languages: ["English", "Hindi", "Telugu"],
+    consultation: ["Video", "Audio"],
+    instant: true
+  }
+];
+
+
+/* ============================================================
+   STATE
+============================================================ */
+
+let currentPatientId = "rahul";
+let currentPage = "dashboard";
+let currentLanguage = "en";
+let careSystem = "Allopathy";
+let selectedBodyParts = [];
+let appointmentDoctor = null;
+let recognition = null;
+let listening = false;
+
+const transcriptSamples = {
+
+  en:
+    "I've been having acidity for around eight months. It becomes worse after meals and I also feel stiffness in my joints in the morning.",
+
+  hinglish:
+    "Mujhe around eight months se acidity ho rahi hai. Khana khane ke baad zyada hoti hai aur morning mein joints mein stiffness bhi feel hoti hai.",
+
+  hi:
+    "मुझे लगभग आठ महीने से एसिडिटी हो रही है। खाना खाने के बाद यह बढ़ जाती है और सुबह जोड़ों में अकड़न भी महसूस होती है।",
+
+  mr:
+    "मला साधारण आठ महिन्यांपासून अॅसिडिटीचा त्रास आहे. जेवल्यानंतर ती वाढते आणि सकाळी सांध्यांमध्ये कडकपणा जाणवतो.",
+
+  ta:
+    "எனக்கு சுமார் எட்டு மாதங்களாக அமிலத்தன்மை பிரச்சனை உள்ளது. சாப்பிட்ட பிறகு அது அதிகமாகிறது, மேலும் காலையில் மூட்டுகளில் விறைப்பு ஏற்படுகிறது.",
+
+  bn:
+    "আমার প্রায় আট মাস ধরে অ্যাসিডিটির সমস্যা হচ্ছে। খাওয়ার পর এটি বেড়ে যায় এবং সকালে জয়েন্টে শক্তভাব অনুভব করি।",
+
+  te:
+    "నాకు సుమారు ఎనిమిది నెలలుగా ఎసిడిటీ సమస్య ఉంది. భోజనం చేసిన తర్వాత ఇది ఎక్కువ అవుతుంది మరియు ఉదయం కీళ్లలో బిగుతుగా అనిపిస్తుంది।",
+
+  kn:
+    "ನನಗೆ ಸುಮಾರು ಎಂಟು ತಿಂಗಳಿಂದ ಆಸಿಡಿಟಿ ಸಮಸ್ಯೆ ಇದೆ. ಊಟದ ನಂತರ ಇದು ಹೆಚ್ಚಾಗುತ್ತದೆ ಮತ್ತು ಬೆಳಿಗ್ಗೆ ಕೀಲುಗಳಲ್ಲಿ ಬಿಗಿತ ಅನುಭವವಾಗುತ್ತದೆ."
+};
+
+const languageNames = {
+  en: "English",
+  hinglish: "Hinglish",
+  hi: "हिन्दी",
+  mr: "मराठी",
+  ta: "தமிழ்",
+  bn: "বাংলা",
+  te: "తెలుగు",
+  kn: "ಕನ್ನಡ"
+};
+
+const recognitionLocales = {
+  en: "en-IN",
+  hinglish: "en-IN",
+  hi: "hi-IN",
+  mr: "mr-IN",
+  ta: "ta-IN",
+  bn: "bn-IN",
+  te: "te-IN",
+  kn: "kn-IN"
+};
+
+
+/* ============================================================
+   HELPERS
+============================================================ */
+
+function getPatient() {
+  return patients[currentPatientId];
+}
+
+function treatmentDuration(startDate) {
+
+  const start = new Date(startDate);
+  const now = new Date();
+
+  let months =
+    (now.getFullYear() - start.getFullYear()) * 12 +
+    (now.getMonth() - start.getMonth());
+
+  if (now.getDate() < start.getDate()) {
+    months--;
+  }
+
+  if (months < 1) {
+    const days = Math.max(
+      1,
+      Math.floor((now - start) / (1000 * 60 * 60 * 24))
+    );
+
+    return `${days} day${days === 1 ? "" : "s"}`;
+  }
+
+  const years = Math.floor(months / 12);
+  const remainingMonths = months % 12;
+
+  let result = [];
+
+  if (years) {
+    result.push(`${years} year${years > 1 ? "s" : ""}`);
+  }
+
+  if (remainingMonths) {
+    result.push(`${remainingMonths} month${remainingMonths > 1 ? "s" : ""}`);
+  }
+
+  return result.join(" ");
+}
+
+function themeFor(patient) {
+
+  if (patient.type === "female") {
+    return {
+      bg: "#ec7fa8",
+      light: "#fff1f6",
+      text: "#be185d",
+      gradient: "from-pink-500 to-rose-300"
+    };
+  }
+
+  if (patient.type === "baby") {
+    return {
+      bg: "#7c83fd",
+      light: "#f1f2ff",
+      text: "#4f46e5",
+      gradient: "from-indigo-500 to-violet-400"
+    };
+  }
+
+  return {
+    bg: "#2563eb",
+    light: "#eff6ff",
+    text: "#1d4ed8",
+    gradient: "from-blue-600 to-cyan-400"
+  };
+}
+
+function showToast(message, type = "info") {
+
+  const container = document.getElementById("toastContainer");
+
+  const div = document.createElement("div");
+
+  const bg =
+    type === "success"
+      ? "bg-emerald-600"
+      : type === "danger"
+      ? "bg-red-600"
+      : "bg-slate-900";
+
+  div.className =
+    `toast ${bg} text-white px-5 py-3 rounded-xl shadow-xl text-sm font-semibold`;
+
+  div.textContent = message;
+
+  container.appendChild(div);
+
+  setTimeout(() => div.remove(), 3200);
+}
+
+
+/* ============================================================
+   TOP BAR
+============================================================ */
+
+function renderTopBar() {
+
+  const patient = getPatient();
+  document.getElementById("topDoctor").innerHTML = `
+
+    <div class="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center">
+      ⚕
+    </div>
+
+    <div>
+      <div class="text-[10px] text-slate-400 uppercase font-bold">
+        Current Doctor
+      </div>
+
+      <div class="text-sm font-black">
+        ${patient.doctor.name}
+      </div>
+
+      <div class="text-[10px] text-slate-400">
+        ${patient.doctor.specialty}
+      </div>
+    </div>
+  `;
+}
+
+
+/* ============================================================
+   SIDEBAR PATIENT
+============================================================ */
+
+function renderSidebarPatient() {
+
+  const patient = getPatient();
+  const theme = themeFor(patient);
+
+  document.getElementById("sidebarPatient").innerHTML = `
+
+    <div class="flex items-center gap-3">
+
+      <div
+        class="w-11 h-11 rounded-xl flex items-center justify-center text-white font-black"
+        style="background:${theme.bg}">
+        ${patient.initials}
+      </div>
+
+      <div class="min-w-0">
+        <div class="font-black text-sm truncate">
+          ${patient.name}
+        </div>
+
+        <div class="text-[11px] text-slate-400">
+          ${patient.age}${patient.type === "baby" ? " years" : " yrs"} · ${patient.gender}
+        </div>
+      </div>
+
+    </div>
+
+    <div class="mt-3 text-[11px] text-slate-500">
+      <span class="font-bold">Doctor:</span>
+      ${patient.doctor.name}
+    </div>
+  `;
+}
+
+
+/* ============================================================
+   PATIENT-SPECIFIC MENU
+============================================================ */
+
+function renderPatientSpecificMenu() {
+
+  const patient = getPatient();
+
+  const container = document.getElementById("patientSpecificMenu");
+
+  let html = `
+    <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-3 mt-6 mb-2">
+      ${patient.name.split(" ")[0]}'s Specific Care
+    </div>
+  `;
+
+  if (patient.type === "female") {
+
+    html += `
+      <button
+        class="nav-item w-full flex items-center gap-3 px-3 py-3 rounded-xl mb-1 text-left"
+        data-page="menstrual">
+        <span>🌸</span>
+        <span>Menstrual Cycle Tracker</span>
+      </button>
+    `;
+  }
+
+  if (patient.type === "baby") {
+
+    html += `
+      <button
+        class="nav-item w-full flex items-center gap-3 px-3 py-3 rounded-xl mb-1 text-left"
+        data-page="vaccination">
+        <span>💉</span>
+        <span>Vaccination Tracker</span>
+      </button>
+    `;
+  }
+
+  container.innerHTML = html;
+
+  container.querySelectorAll("[data-page]").forEach(button => {
+
+    button.addEventListener("click", () => {
+      showPage(button.dataset.page);
+    });
+
+  });
+}
+
+
+/* ============================================================
+   DASHBOARD
+============================================================ */
+
+function renderDashboard() {
+
+  const patient = getPatient();
+  const theme = themeFor(patient);
+
+  document.getElementById("dashboardHero").innerHTML = `
+
+    <div
+      class="rounded-[2rem] p-7 text-white bg-gradient-to-br ${theme.gradient} shadow-lg">
+
+      <div class="flex flex-col lg:flex-row justify-between gap-6">
+
+        <div>
+
+          <div class="text-sm opacity-80">
+            Welcome to the clinical workspace
+          </div>
+
+          <h1 class="text-4xl lg:text-5xl font-black mt-2">
+            ${patient.name}
+          </h1>
+
+          <div class="mt-3 text-white/80">
+            ${patient.age}${patient.type === "baby" ? " years old" : " years"} ·
+            ${patient.gender} ·
+            ${patient.nationality}
+          </div>
+
+        </div>
+
+        <div class="lg:text-right">
+
+          <div class="text-xs uppercase tracking-widest text-white/70">
+            Current Doctor
+          </div>
+
+          <div class="text-xl font-black mt-1">
+            ${patient.doctor.name}
+          </div>
+
+          <div class="text-sm text-white/75">
+            ${patient.doctor.specialty}
+          </div>
+
+          <div class="mt-3 inline-flex px-3 py-1 rounded-full bg-white/20 text-xs font-bold">
+            Under treatment for ${treatmentDuration(patient.doctor.since)}
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  `;
+
+
+  document.getElementById("comfortValue").textContent =
+    patient.comfort;
+
+  document.getElementById("anxietyValue").textContent =
+    patient.anxiety;
+
+  document.getElementById("dashboardRisk").textContent =
+    calculateRisk(patient).label;
+
+  document.getElementById("dashboardDoctor").textContent =
+    patient.doctor.name;
+
+  document.getElementById("dashboardDoctorSince").textContent =
+    `Treatment: ${treatmentDuration(patient.doctor.since)}`;
+
+
+  document.getElementById("dashboardSnapshot").innerHTML = `
+
+    <div class="p-4 rounded-2xl bg-blue-50">
+      <div class="text-xs text-slate-400">Chief Complaint</div>
+      <div class="font-bold mt-1">
+        ${patient.chiefComplaints[0]}
+      </div>
+    </div>
+
+    <div class="p-4 rounded-2xl bg-purple-50">
+      <div class="text-xs text-slate-400">Duration</div>
+      <div class="font-bold mt-1">
+        ${patient.duration}
+      </div>
+    </div>
+
+    <div class="p-4 rounded-2xl bg-emerald-50">
+      <div class="text-xs text-slate-400">Diet</div>
+      <div class="font-bold mt-1">
+        ${patient.diet.type}
+      </div>
+    </div>
+
+    <div class="p-4 rounded-2xl bg-orange-50">
+      <div class="text-xs text-slate-400">Occupation</div>
+      <div class="font-bold mt-1">
+        ${patient.occupation.job}
+      </div>
+    </div>
+  `;
+
+  renderDashboardInstantDoctors();
+}
+
+function renderDashboardInstantDoctors() {
+
+  const patient = getPatient();
+
+  const relevant = getMatchedDoctors().filter(d => d.instant).slice(0, 3);
+
+  document.getElementById("dashboardInstantDoctors").innerHTML =
+    relevant.map(d => `
+
+      <div class="p-3 rounded-2xl bg-white/10 border border-white/10">
+
+        <div class="flex justify-between items-start">
+
+          <div>
+            <div class="font-bold text-sm">
+              ${d.name}
+            </div>
+
+            <div class="text-xs text-slate-400">
+              ${d.specialty}
+            </div>
+          </div>
+
+          <span class="text-[10px] px-2 py-1 rounded-full bg-emerald-500/20 text-emerald-300">
+            Ready
+          </span>
+
+        </div>
+
+        <button
+          onclick="startInstantCall('${d.name}')"
+          class="w-full mt-3 bg-white text-slate-900 rounded-xl py-2 text-xs font-bold">
+          Video Call
+        </button>
+
+      </div>
+
+    `).join("");
+}
+
+
+/* ============================================================
+   INTAKE
+============================================================ */
+
+function updateIntakeLanguage() {
+
+  const language = languageNames[currentLanguage];
+
+  document.getElementById("languageBadge").textContent = language;
+
+  document.getElementById("transcript").textContent =
+    transcriptSamples[currentLanguage];
+
+  const patient = getPatient();
+
+  const tags = [
+    patient.chiefComplaints[0],
+    patient.chiefComplaints[1] || "Routine follow-up",
+    patient.duration,
+    patient.onset,
+    "Clinical history"
+  ];
+
+  document.getElementById("extractionTags").innerHTML =
+    tags.map((tag, i) => `
+      <span class="px-3 py-2 rounded-full
+        ${i % 2 === 0 ? "bg-blue-50 text-blue-700" : "bg-purple-50 text-purple-700"}
+        text-xs font-bold">
+        ${tag}
+      </span>
+    `).join("");
+
+  document.getElementById("intakeStructure").innerHTML = `
+
+    <div class="p-4 rounded-2xl bg-blue-50">
+      <div class="text-xs text-slate-400">Chief Complaints</div>
+      <div class="font-bold mt-1">
+        ${patient.chiefComplaints.join(", ")}
+      </div>
+    </div>
+
+    <div class="p-4 rounded-2xl bg-purple-50">
+      <div class="text-xs text-slate-400">Duration</div>
+      <div class="font-bold mt-1">${patient.duration}</div>
+    </div>
+
+    <div class="p-4 rounded-2xl bg-emerald-50">
+      <div class="text-xs text-slate-400">Onset</div>
+      <div class="font-bold mt-1">${patient.onset}</div>
+    </div>
+
+    <div class="p-4 rounded-2xl bg-orange-50">
+      <div class="text-xs text-slate-400">Associated Context</div>
+      <div class="font-bold mt-1">${patient.associated}</div>
+    </div>
+
+  `;
+
+  document.getElementById("intakeDescription").textContent =
+    currentLanguage === "hi"
+      ? "स्वाभाविक रूप से बोलें। TECHCARE AI बातचीत को डॉक्टर की समीक्षा के लिए व्यवस्थित करेगा।"
+      : "Speak naturally. TECHCARE AI will organize the conversation into a structured clinical case for doctor verification.";
+}
+
+document.getElementById("languageSelect").addEventListener("change", function () {
+
+  currentLanguage = this.value;
+
+  updateIntakeLanguage();
+
+  showToast(`Language changed to ${languageNames[currentLanguage]}`, "success");
+});
+
+
+/* ============================================================
+   SPEECH RECOGNITION
+============================================================ */
+
+function startSpeech() {
+
+  const SpeechRecognition =
+    window.SpeechRecognition ||
+    window.webkitSpeechRecognition;
+
+  if (!SpeechRecognition) {
+
+    simulateSpeech();
+
+    return;
+  }
+
+  recognition = new SpeechRecognition();
+
+  recognition.lang = recognitionLocales[currentLanguage];
+  recognition.interimResults = true;
+  recognition.continuous = true;
+
+  recognition.onstart = () => {
+
+    listening = true;
+
+    document.getElementById("voiceStatus").textContent =
+      "Listening…";
+
+    document.getElementById("wave").style.opacity = "1";
+  };
+
+  recognition.onresult = event => {
+
+    let finalText = "";
+
+    for (let i = 0; i < event.results.length; i++) {
+      finalText += event.results[i][0].transcript;
+    }
+
+    document.getElementById("transcript").textContent =
+      finalText;
+  };
+
+  recognition.onerror = () => {
+    simulateSpeech();
+  };
+
+  recognition.onend = () => {
+
+    listening = false;
+
+    document.getElementById("voiceStatus").textContent =
+      "Ready to listen";
+
+    document.getElementById("wave").style.opacity = "0";
+  };
+
+  recognition.start();
+}
+
+function stopSpeech() {
+
+  if (recognition) {
+    recognition.stop();
+  }
+
+  listening = false;
+
+  document.getElementById("voiceStatus").textContent =
+    "Ready to listen";
+
+  document.getElementById("wave").style.opacity = "0";
+}
+
+function simulateSpeech() {
+
+  listening = true;
+
+  document.getElementById("voiceStatus").textContent =
+    "Demo listening mode…";
+
+  document.getElementById("wave").style.opacity = "1";
+
+  setTimeout(() => {
+
+    document.getElementById("transcript").textContent =
+      transcriptSamples[currentLanguage];
+
+    listening = false;
+
+    document.getElementById("voiceStatus").textContent =
+      "Demo transcript captured";
+
+    document.getElementById("wave").style.opacity = "0";
+
+  }, 1600);
+}
+
+document.getElementById("voiceButton").addEventListener("click", () => {
+
+  if (listening) {
+    stopSpeech();
+  } else {
+    startSpeech();
+  }
+
+});
+
+
+/* ============================================================
+   CLINICAL CASE
+============================================================ */
+
+function renderClinicalCase() {
+
+  const p = getPatient();
+
+  const items = [
+    ["Chief Complaints", p.chiefComplaints.join(" · ")],
+    ["Duration", p.duration],
+    ["Onset", p.onset],
+    ["Severity", p.severity],
+    ["Associated Context", p.associated],
+    ["Current Doctor", p.doctor.name]
+  ];
+
+  document.getElementById("clinicalCaseGrid").innerHTML =
+    items.map(item => `
+
+      <div class="p-5 rounded-2xl bg-slate-50 border border-slate-100">
+        <div class="text-xs text-slate-400 font-semibold">
+          ${item[0]}
+        </div>
+        <div class="font-bold mt-2">
+          ${item[1]}
+        </div>
+      </div>
+
+    `).join("");
+
+  document.getElementById("dietCard").innerHTML = `
+    <div class="grid sm:grid-cols-2 gap-3">
+
+      ${Object.entries(p.diet).map(([key,value]) => `
+        <div class="p-4 rounded-2xl bg-slate-50">
+          <div class="text-xs text-slate-400 capitalize">
+            ${key}
+          </div>
+          <div class="font-bold mt-1">${value}</div>
+        </div>
+      `).join("")}
+
+    </div>
+  `;
+
+  document.getElementById("occupationCard").innerHTML = `
+    <div class="grid sm:grid-cols-2 gap-3">
+
+      ${Object.entries(p.occupation).map(([key,value]) => `
+        <div class="p-4 rounded-2xl bg-slate-50">
+          <div class="text-xs text-slate-400 capitalize">
+            ${key}
+          </div>
+          <div class="font-bold mt-1">${value}</div>
+        </div>
+      `).join("")}
+
+    </div>
+  `;
+
+  document.getElementById("familyHistory").innerHTML =
+    p.family.map(item => `
+
+      <div class="p-4 rounded-2xl bg-slate-50 border border-slate-100">
+
+        <div class="flex justify-between gap-2">
+          <div class="font-bold">${item.condition}</div>
+
+          <span class="text-[10px] px-2 py-1 rounded-full bg-white text-slate-500">
+            ${item.relation}
+          </span>
+        </div>
+
+        <div class="text-xs text-slate-400 mt-2">
+          ${item.notes}
+        </div>
+
+      </div>
+
+    `).join("");
+
+  document.getElementById("caseRiskBadge").innerHTML =
+    riskBadge(calculateRisk(p));
+
+}
+
+
+/* ============================================================
+   PROFILE
+============================================================ */
+
+function renderProfile() {
+
+  const p = getPatient();
+  const theme = themeFor(p);
+
+  document.getElementById("profileHeader").innerHTML = `
+
+    <div
+      class="rounded-[2rem] p-7 text-white bg-gradient-to-r ${theme.gradient}">
+
+      <div class="flex flex-col md:flex-row md:items-center gap-5">
+
+        <div class="w-24 h-24 rounded-3xl bg-white/20 flex items-center justify-center text-3xl font-black">
+          ${p.initials}
+        </div>
+
+        <div class="flex-1">
+
+          <div class="text-white/70 text-xs uppercase tracking-widest font-bold">
+            Patient Profile
+          </div>
+
+          <h1 class="text-4xl font-black mt-1">
+            ${p.name}
+          </h1>
+
+          <div class="mt-2 text-white/80">
+            ${p.age}${p.type === "baby" ? " years" : " years"} · ${p.gender} · ${p.nationality}
+          </div>
+
+        </div>
+
+        <div class="md:text-right">
+
+          <div class="text-xs text-white/70">
+            Current Doctor
+          </div>
+
+          <div class="font-black text-lg">
+            ${p.doctor.name}
+          </div>
+
+          <div class="text-sm text-white/75">
+            ${p.doctor.specialty}
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  `;
+
+
+  const basic = [
+    ["Full Name", p.name],
+    ["Age", `${p.age} years`],
+    ["Gender", p.gender],
+    ["Nationality", p.nationality],
+    ["Address", p.address],
+    ["Language", languageNames[p.language]]
+  ];
+
+  document.getElementById("basicProfile").innerHTML =
+    basic.map(([a,b]) => profileField(a,b)).join("");
+
+
+  document.getElementById("profileDoctorCard").innerHTML = `
+
+    <div class="text-xs text-slate-400 uppercase font-bold">
+      Current Doctor
+    </div>
+
+    <div class="flex items-center gap-4 mt-5">
+
+      <div class="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center text-2xl">
+        ⚕
+      </div>
+
+      <div>
+        <div class="font-black">
+          ${p.doctor.name}
+        </div>
+        <div class="text-sm text-slate-400">
+          ${p.doctor.specialty}
+        </div>
+      </div>
+
+    </div>
+
+    <div class="mt-5 p-4 rounded-2xl bg-slate-50">
+      <div class="text-xs text-slate-400">
+        Treatment duration
+      </div>
+      <div class="font-black mt-1">
+        ${treatmentDuration(p.doctor.since)}
+      </div>
+    </div>
+
+  `;
+
+
+  const past = [
+    ["Surgeries", p.past.surgeries],
+    ["Accidents", p.past.accidents],
+    ["Allergy", p.past.allergy],
+    ["Treatment With Another Doctor", p.past.otherDoctor]
+  ];
+
+  document.getElementById("pastHistory").innerHTML =
+    past.map(([a,b]) => profileField(a,b)).join("");
+
+
+  const personal = [
+    ["BMI", p.personal.bmi],
+    ["Appearance", p.personal.appearance],
+    ["Habits", p.personal.habits],
+    ["Addictions", p.personal.addictions],
+    ["Marital Status", p.personal.marital],
+    ["Home Environment", p.personal.home],
+    ["Workplace Environment", p.personal.workplace]
+  ];
+
+  document.getElementById("personalHistory").innerHTML =
+    personal.map(([a,b]) => profileField(a,b)).join("");
+}
+
+function profileField(label, value) {
+
+  return `
+    <div class="p-4 rounded-2xl bg-slate-50">
+      <div class="text-xs text-slate-400">
+        ${label}
+      </div>
+      <div class="font-bold mt-1">
+        ${value}
+      </div>
+    </div>
+  `;
+}
+
+
+/* ============================================================
+   TIMELINE
+============================================================ */
+
+function renderTimeline() {
+
+  const p = getPatient();
+
+  document.getElementById("timeline").innerHTML =
+    p.timeline.map((event, index) => `
+
+      <div class="relative pl-10 pb-8">
+
+        ${index !== p.timeline.length - 1
+          ? `<div class="timeline-line"></div>`
+          : ""}
+
+        <div class="absolute left-0 top-1 w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-xs font-black">
+          ${index + 1}
+        </div>
+
+        <div class="text-xs text-slate-400 font-bold">
+          ${event[0]}
+        </div>
+
+        <div class="font-black mt-1">
+          ${event[1]}
+        </div>
+
+        <div class="text-sm text-slate-500 mt-1">
+          ${event[2]}
+        </div>
+
+      </div>
+
+    `).join("");
+
+
+  document.getElementById("treatmentDuration").innerHTML = `
+
+    <div class="text-4xl font-black accent-text">
+      ${treatmentDuration(p.doctor.since)}
+    </div>
+
+    <div class="text-sm text-slate-400 mt-2">
+      with ${p.doctor.name}
+    </div>
+
+    <div class="mt-5 p-4 rounded-2xl bg-slate-50">
+      <div class="text-xs text-slate-400">
+        Treatment started
+      </div>
+      <div class="font-bold mt-1">
+        ${new Date(p.doctor.since).toLocaleDateString("en-IN")}
+      </div>
+    </div>
+  `;
+}
+
+
+/* ============================================================
+   MEDICATIONS
+============================================================ */
+
+function renderMedications() {
+
+  const p = getPatient();
+
+  document.getElementById("medicationTable").innerHTML =
+    p.medications.map(m => `
+
+      <tr class="border-b border-slate-100">
+
+        <td class="py-4 font-bold">${m.name}</td>
+        <td>${m.dose}</td>
+        <td>${m.frequency}</td>
+
+        <td>
+          <span class="px-2 py-1 rounded-full
+            ${m.adherence === "Good"
+              ? "bg-emerald-50 text-emerald-600"
+              : "bg-amber-50 text-amber-600"}
+            text-xs font-bold">
+            ${m.adherence}
+          </span>
+        </td>
+
+        <td>${m.started}</td>
+        <td>${m.nextDose}</td>
+
+      </tr>
+
+    `).join("");
+}
+
+function openMedicationModal() {
+  document.getElementById("medicationModal").classList.remove("hidden");
+  document.getElementById("medicationModal").classList.add("flex");
+}
+
+function closeMedicationModal() {
+  document.getElementById("medicationModal").classList.add("hidden");
+  document.getElementById("medicationModal").classList.remove("flex");
+}
+
+function saveMedication() {
+
+  const name = document.getElementById("medName").value.trim();
+
+  if (!name) {
+    showToast("Please enter a medication name", "danger");
+    return;
+  }
+
+  const p = getPatient();
+
+  p.medications.push({
+    name,
+    dose: document.getElementById("medDose").value || "As prescribed",
+    frequency: document.getElementById("medFrequency").value || "As prescribed",
+    adherence: "Not recorded",
+    started: document.getElementById("medStart").value || "Today",
+    nextDose: "To be recorded"
+  });
+
+  closeMedicationModal();
+
+  renderMedications();
+
+  showToast("Medication added to patient record", "success");
+
+  document.getElementById("medName").value = "";
+  document.getElementById("medDose").value = "";
+  document.getElementById("medFrequency").value = "";
+}
+
+
+/* ============================================================
+   SMART DOCS
+============================================================ */
+
+document.getElementById("documentUpload").addEventListener("change", function() {
+
+  const files = Array.from(this.files);
+
+  const container = document.getElementById("uploadedDocs");
+
+  container.innerHTML = files.map(file => `
+
+    <div class="flex items-center gap-3 p-4 rounded-2xl bg-slate-50">
+
+      <div class="w-11 h-11 rounded-xl bg-purple-50 flex items-center justify-center">
+        📄
+      </div>
+
+      <div class="flex-1">
+        <div class="font-bold text-sm">
+          ${file.name}
+        </div>
+
+        <div class="text-xs text-slate-400">
+          ${(file.size / 1024).toFixed(1)} KB · OCR processing
+        </div>
+      </div>
+
+      <span class="text-xs font-bold text-emerald-600">
+        Extracted
+      </span>
+
+    </div>
+
+  `).join("");
+
+  showToast("Document processed in demo OCR mode", "success");
+});
+
+function renderOCR() {
+
+  const p = getPatient();
+
+  document.getElementById("ocrFindings").innerHTML =
+    p.sampleOCR.map(item => `
+
+      <div class="p-4 rounded-2xl border border-slate-100">
+
+        <div class="flex justify-between">
+
+          <div class="font-bold">
+            ${item[0]}
+          </div>
+
+          <div class="font-black">
+            ${item[1]}
+          </div>
+
+        </div>
+
+        <div class="text-xs text-slate-400 mt-2">
+          ${item[2]}
+        </div>
+
+      </div>
+
+    `).join("");
+}
+
+
+/* ============================================================
+   FEMALE MENSTRUAL TRACKER
+============================================================ */
+
+function renderMenstrual() {
+
+  const container = document.getElementById("menstrualContent");
+  const p = getPatient();
+
+  if (p.type !== "female") {
+
+    container.innerHTML = `
+      <div class="bg-white rounded-3xl p-8 text-center">
+        <div class="text-4xl">🔒</div>
+        <h2 class="text-xl font-black mt-4">
+          Female-specific feature
+        </h2>
+        <p class="text-slate-400 mt-2">
+          Menstrual Cycle Tracker is available only for a female patient profile.
+        </p>
+      </div>
+    `;
+
+    return;
+  }
+
+  const m = p.menstrual;
+
+  container.innerHTML = `
+
+    <div class="bg-gradient-to-r from-pink-500 to-rose-300 text-white rounded-[2rem] p-7">
+
+      <div class="text-xs uppercase tracking-widest text-white/70 font-bold">
+        Female Patient Care
+      </div>
+
+      <h1 class="text-3xl font-black mt-2">
+        Menstrual Cycle Tracker
+      </h1>
+
+      <p class="text-white/80 mt-2">
+        Patient-specific cycle information for clinician review.
+      </p>
+
+    </div>
+
+
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5 mt-6">
+
+      ${profileField("Last Menstrual Period", m.lmp)}
+      ${profileField("Cycle Length", m.cycleLength)}
+      ${profileField("Period Duration", m.periodDuration)}
+      ${profileField("Regularity", m.regularity)}
+      ${profileField("Symptoms", m.symptoms)}
+      ${profileField("Next Estimated Period", m.nextPeriod)}
+
+    </div>
+
+
+    <div class="bg-white rounded-3xl border border-slate-100 shadow-card p-6 mt-6">
+
+      <h2 class="font-black text-lg">
+        Cycle Notes
+      </h2>
+
+      <textarea
+        class="mt-4 w-full h-32 border border-slate-200 rounded-2xl p-4 outline-none"
+        placeholder="Add patient-reported cycle notes..."></textarea>
+
+      <div class="mt-4 text-xs text-slate-400">
+        This tracker records information and does not provide a diagnosis.
+      </div>
+
+    </div>
+
+  `;
+}
+
+
+/* ============================================================
+   BABY VACCINATION TRACKER
+============================================================ */
+
+function renderVaccination() {
+
+  const container = document.getElementById("vaccinationContent");
+  const p = getPatient();
+
+  if (p.type !== "baby") {
+
+    container.innerHTML = `
+      <div class="bg-white rounded-3xl p-8 text-center">
+        <div class="text-4xl">🔒</div>
+        <h2 class="text-xl font-black mt-4">
+          Baby-specific feature
+        </h2>
+        <p class="text-slate-400 mt-2">
+          Vaccination Tracker is available only for a baby profile.
+        </p>
+      </div>
+    `;
+
+    return;
+  }
+
+  container.innerHTML = `
+
+    <div class="bg-gradient-to-r from-indigo-500 to-violet-400 text-white rounded-[2rem] p-7">
+
+      <div class="text-xs uppercase tracking-widest text-white/70 font-bold">
+        Pediatric Patient Care
+      </div>
+
+      <h1 class="text-3xl font-black mt-2">
+        Vaccination Tracker
+      </h1>
+
+      <p class="text-white/80 mt-2">
+        Patient-specific vaccination record and due-item overview.
+      </p>
+
+    </div>
+
+
+    <div class="bg-white rounded-3xl border border-slate-100 shadow-card p-6 mt-6">
+
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="font-black text-lg">
+            ${p.name}'s Vaccination Record
+          </h2>
+          <p class="text-sm text-slate-400">
+            Review against the child's official immunization record.
+          </p>
+        </div>
+      </div>
+
+
+      <div class="overflow-x-auto mt-6">
+
+        <table class="w-full text-sm">
+
+          <thead>
+            <tr class="border-b border-slate-100 text-left text-slate-400">
+              <th class="py-3">Vaccine</th>
+              <th>Status</th>
+              <th>Schedule</th>
+            </tr>
+          </thead>
+
+          <tbody>
+
+            ${p.vaccination.map(v => `
+
+              <tr class="border-b border-slate-100">
+
+                <td class="py-4 font-bold">
+                  ${v[0]}
+                </td>
+
+                <td>
+                  <span class="px-3 py-1 rounded-full text-xs font-bold
+                    ${v[1] === "Completed"
+                      ? "bg-emerald-50 text-emerald-600"
+                      : "bg-amber-50 text-amber-600"}">
+                    ${v[1]}
+                  </span>
+                </td>
+
+                <td>${v[2]}</td>
+
+              </tr>
+
+            `).join("")}
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </div>
+
+    <div class="mt-5 text-xs text-slate-400">
+      Vaccine schedules shown here are demonstration data. Confirm due dates with the child's pediatrician and official vaccination record.
+    </div>
+
+  `;
+}
+
+
+/* ============================================================
+   RISK SCREENING
+============================================================ */
+
+function calculateRisk(patient) {
+
+  let score = 0;
+
+  patient.riskFactors.forEach(factor => {
+
+    if (factor[2] === "moderate") score += 2;
+    if (factor[2] === "high") score += 3;
+    if (factor[2] === "low") score += 1;
+
+  });
+
+  let label = "Low";
+  let text = "text-emerald-600";
+  let bg = "bg-emerald-50";
+
+  if (score >= 7) {
+    label = "Moderate";
+    text = "text-amber-600";
+    bg = "bg-amber-50";
+  }
+
+  if (score >= 10) {
+    label = "High";
+    text = "text-red-600";
+    bg = "bg-red-50";
+  }
+
+  return {
+    score,
+    label,
+    text,
+    bg
+  };
+}
+
+function riskBadge(risk) {
+
+  return `
+    <span class="px-3 py-2 rounded-full ${risk.bg} ${risk.text} text-xs font-bold">
+      ${risk.label} risk-screening level
+    </span>
+  `;
+}
+
+function renderRisk() {
+
+  const p = getPatient();
+  const risk = calculateRisk(p);
+
+  const circle = document.getElementById("riskScoreCircle");
+
+  circle.className =
+    `w-20 h-20 rounded-full flex items-center justify-center font-black text-xl ${risk.bg} ${risk.text}`;
+
+  circle.textContent = risk.score;
+
+  document.getElementById("riskFactors").innerHTML =
+    p.riskFactors.map(f => `
+
+      <div class="p-5 rounded-2xl border border-slate-100">
+
+        <div class="flex justify-between gap-3">
+
+          <div class="font-bold">
+            ${f[0]}
+          </div>
+
+          <span class="text-[10px] px-2 py-1 rounded-full
+            ${f[2] === "moderate"
+              ? "bg-amber-50 text-amber-600"
+              : "bg-emerald-50 text-emerald-600"}">
+            ${f[2]}
+          </span>
+
+        </div>
+
+        <div class="text-sm text-slate-500 mt-2">
+          ${f[1]}
+        </div>
+
+      </div>
+
+    `).join("");
+
+  document.getElementById("riskSuggestions").innerHTML =
+    p.suggestions.map(s => `
+
+      <div class="p-4 rounded-2xl bg-white/10 border border-white/10">
+        <div class="text-sm">
+          ${s}
+        </div>
+      </div>
+
+    `).join("");
+}
+
+
+/* ============================================================
+   BODY MAP
+============================================================ */
+
+document.querySelectorAll(".body-part").forEach(part => {
+
+  part.addEventListener("click", () => {
+
+    const name = part.dataset.part;
+
+    if (!selectedBodyParts.includes(name)) {
+      selectedBodyParts.push(name);
+    } else {
+      selectedBodyParts =
+        selectedBodyParts.filter(x => x !== name);
+    }
+
+    renderSelectedBodyParts();
+  });
+
+});
+
+function renderSelectedBodyParts() {
+
+  document.getElementById("selectedBodyParts").innerHTML =
+    selectedBodyParts.length
+      ? selectedBodyParts.map(p => `
+          <span class="px-3 py-2 rounded-full bg-blue-50 text-blue-600 text-xs font-bold">
+            ${p}
+          </span>
+        `).join("")
+      : `<span class="text-sm text-slate-400">No area selected yet.</span>`;
+}
+
+
+/* ============================================================
+   DOCTOR MATCHING
+============================================================ */
+
+function getMatchedDoctors() {
+
+  const p = getPatient();
+
+  let preferred = null;
+
+  const combined =
+    p.chiefComplaints.join(" ").toLowerCase();
+
+  if (p.type === "baby") {
+    preferred = "Pediatrics";
+  }
+  else if (p.type === "female") {
+    preferred = "Gynecology";
+  }
+  else if (combined.includes("acidity")) {
+    preferred = "Gastroenterology";
+  }
+  else if (combined.includes("joint")) {
+    preferred = "Orthopedics";
+  }
+  else if (careSystem === "AYUSH") {
+    preferred = "Ayurveda";
+  }
+  else {
+    preferred = "General Medicine";
+  }
+
+  return doctors
+    .slice()
+    .sort((a,b) =>
+      (a.specialty === preferred ? -1 : 1) -
+      (b.specialty === preferred ? -1 : 1)
+    );
+}
+
+function renderDoctors() {
+
+  const matched = getMatchedDoctors();
+
+  const topMatch = matched[0];
+
+  document.getElementById("aiDoctorMatch").innerHTML = `
+
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+
+      <div>
+
+        <div class="text-xs font-bold text-indigo-500 uppercase">
+          AI Match
+        </div>
+
+        <div class="text-lg font-black mt-1">
+          ${topMatch.name}
+        </div>
+
+        <div class="text-sm text-slate-500 mt-1">
+          ${topMatch.specialty} · ${topMatch.experience}
+        </div>
+
+      </div>
+
+      <button
+        onclick="openAppointment('${topMatch.name}')"
+        class="px-5 py-3 bg-indigo-600 text-white rounded-xl font-bold">
+        View Consultation
+      </button>
+
+    </div>
+  `;
+
+
+  const instant = matched.filter(d => d.instant);
+
+  document.getElementById("instantDoctors").innerHTML =
+    instant.map(d => doctorCard(d, true)).join("");
+
+  renderFilteredDoctors();
+}
+
+function doctorCard(d, instant = false) {
+
+  const statusClass =
+    d.status === "Available"
+      ? "bg-emerald-50 text-emerald-600"
+      : d.status === "Busy"
+      ? "bg-amber-50 text-amber-600"
+      : "bg-slate-100 text-slate-500";
+
+  return `
+    <div class="p-5 rounded-2xl border border-slate-100 bg-white shadow-card">
+
+      <div class="flex items-start justify-between gap-3">
+
+        <div class="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-xl">
+          ⚕
+        </div>
+
+        <span class="px-2 py-1 rounded-full text-[10px] font-bold ${statusClass}">
+          ${instant ? "Instant Video Ready" : d.status}
+        </span>
+
+      </div>
+
+      <div class="font-black mt-4">
+        ${d.name}
+      </div>
+
+      <div class="text-sm text-slate-500 mt-1">
+        ${d.specialty}
+      </div>
+
+      <div class="text-xs text-slate-400 mt-2">
+        ${d.experience} experience
+      </div>
+
+      <div class="flex flex-wrap gap-1 mt-3">
+        ${d.languages.map(l => `
+          <span class="text-[10px] px-2 py-1 bg-slate-50 rounded-full">
+            ${l}
+          </span>
+        `).join("")}
+      </div>
+
+      <div class="text-xs text-slate-400 mt-3">
+        ${d.consultation.join(" · ")}
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 mt-4">
+
+        <button
+          onclick="openAppointment('${d.name}')"
+          class="py-2 rounded-xl bg-slate-950 text-white text-xs font-bold">
+          Book
+        </button>
+
+        <button
+          onclick="startInstantCall('${d.name}')"
+          class="py-2 rounded-xl bg-emerald-50 text-emerald-600 text-xs font-bold">
+          ${d.instant ? "Video Call" : "View"}
+        </button>
+
+      </div>
+
+    </div>
+  `;
+}
+
+function renderFilteredDoctors() {
+
+  const specialization =
+    document.getElementById("specializationFilter").value;
+
+  const language =
+    document.getElementById("doctorLanguageFilter").value;
+
+  const consultation =
+    document.getElementById("consultationFilter").value;
+
+  const filtered = doctors.filter(d => {
+
+    const specializationOK =
+      specialization === "all" ||
+      d.specialty === specialization;
+
+    const languageOK =
+      language === "all" ||
+      d.languages.includes(language);
+
+    const consultationOK =
+      consultation === "all" ||
+      d.consultation.includes(consultation);
+
+    return specializationOK && languageOK && consultationOK;
+  });
+
+  document.getElementById("doctorGrid").innerHTML =
+    filtered.map(d => doctorCard(d)).join("");
+}
+
+[
+  "specializationFilter",
+  "doctorLanguageFilter",
+  "consultationFilter"
+].forEach(id => {
+
+  document.getElementById(id).addEventListener("change", renderFilteredDoctors);
+
+});
+
+
+/* ============================================================
+   APPOINTMENT
+============================================================ */
+
+function openAppointment(name) {
+
+  appointmentDoctor =
+    doctors.find(d => d.name === name);
+
+  if (!appointmentDoctor) return;
+
+  const p = getPatient();
+
+  document.getElementById("appointmentContent").innerHTML = `
+
+    <div class="p-5 rounded-2xl bg-slate-50">
+
+      <div class="text-xs text-slate-400">
+        Patient
+      </div>
+
+      <div class="font-black mt-1">
+        ${p.name}
+      </div>
+
+      <div class="text-xs text-slate-400 mt-4">
+        Doctor
+      </div>
+
+      <div class="font-black mt-1">
+        ${appointmentDoctor.name}
+      </div>
+
+      <div class="text-sm text-slate-500">
+        ${appointmentDoctor.specialty}
+      </div>
+
+    </div>
+
+    <div class="grid grid-cols-3 gap-2 mt-4">
+
+      <button class="p-3 rounded-xl bg-blue-50 text-blue-600 text-sm font-bold">
+        5:30 PM
+      </button>
+
+      <button class="p-3 rounded-xl bg-blue-50 text-blue-600 text-sm font-bold">
+        6:00 PM
+      </button>
+
+      <button class="p-3 rounded-xl bg-blue-50 text-blue-600 text-sm font-bold">
+        7:30 PM
+      </button>
+
+    </div>
+
+  `;
+
+  const modal = document.getElementById("appointmentModal");
+
+  modal.classList.remove("hidden");
+  modal.classList.add("flex");
+}
+
+function closeAppointmentModal() {
+
+  const modal = document.getElementById("appointmentModal");
+
+  modal.classList.add("hidden");
+  modal.classList.remove("flex");
+}
+
+function confirmAppointment() {
+
+  const p = getPatient();
+
+  showToast(
+    `Appointment confirmed for ${p.name} with ${appointmentDoctor.name}`,
+    "success"
+  );
+
+  closeAppointmentModal();
+}
+
+function startInstantCall(name) {
+
+  const p = getPatient();
+
+  showToast(
+    `Starting demo video consultation for ${p.name} with ${name}`,
+    "success"
+  );
+}
+
+
+/* ============================================================
+   AYUSH
+============================================================ */
+
+function setCareSystem(system) {
+
+  careSystem = system;
+
+  const allopathy = document.getElementById("allopathyBtn");
+  const ayush = document.getElementById("ayushBtn");
+  const fields = document.getElementById("ayushFields");
+
+  if (system === "AYUSH") {
+
+    allopathy.className =
+      "px-5 py-2 rounded-lg font-bold text-slate-500";
+
+    ayush.className =
+      "px-5 py-2 rounded-lg bg-white shadow-sm font-bold";
+
+    fields.classList.remove("hidden");
+
+    fields.innerHTML = [
+
+      ["Prakriti", "Vata-Pitta"],
+      ["Vikriti", "To be assessed"],
+      ["Agni", "To be assessed"],
+      ["Koshtha", "To be assessed"]
+
+    ].map(([a,b]) => `
+
+      <div class="p-5 rounded-2xl bg-emerald-50">
+
+        <div class="text-xs text-slate-400">
+          ${a}
+        </div>
+
+        <div class="font-black mt-2">
+          ${b}
+        </div>
+
+      </div>
+
+    `).join("");
+
+  } else {
+
+    allopathy.className =
+      "px-5 py-2 rounded-lg bg-white shadow-sm font-bold";
+
+    ayush.className =
+      "px-5 py-2 rounded-lg font-bold text-slate-500";
+
+    fields.classList.add("hidden");
+  }
+
+  showToast(`Care system: ${system}`, "success");
+}
+
+
+/* ============================================================
+   DOCTOR REVIEW
+============================================================ */
+
+function renderReview() {
+
+  const p = getPatient();
+
+  document.getElementById("reviewSummary").innerHTML = `
+
+    <div>
+      <div class="text-xs text-slate-400">
+        Patient
+      </div>
+      <div class="font-black text-lg">
+        ${p.name}
+      </div>
+    </div>
+
+    <div class="p-5 rounded-2xl bg-blue-50">
+
+      <div class="text-xs text-blue-600 font-bold">
+        CHIEF COMPLAINTS
+      </div>
+
+      <div class="font-bold mt-2">
+        ${p.chiefComplaints.join(" · ")}
+      </div>
+
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-4">
+
+      <div class="p-5 rounded-2xl bg-slate-50">
+        <div class="text-xs text-slate-400">Duration</div>
+        <div class="font-bold mt-1">${p.duration}</div>
+      </div>
+
+      <div class="p-5 rounded-2xl bg-slate-50">
+        <div class="text-xs text-slate-400">Onset</div>
+        <div class="font-bold mt-1">${p.onset}</div>
+      </div>
+
+    </div>
+
+    <div class="p-5 rounded-2xl bg-purple-50">
+
+      <div class="text-xs text-purple-600 font-bold">
+        PAST MEDICAL HISTORY
+      </div>
+
+      <div class="text-sm mt-2">
+        Surgery: ${p.past.surgeries}<br>
+        Accident: ${p.past.accidents}<br>
+        Allergy: ${p.past.allergy}<br>
+        Other doctor: ${p.past.otherDoctor}
+      </div>
+
+    </div>
+
+    <div class="p-5 rounded-2xl bg-emerald-50">
+
+      <div class="text-xs text-emerald-600 font-bold">
+        CURRENT TREATMENT
+      </div>
+
+      <div class="text-sm mt-2">
+        ${p.medications.map(m => m.name).join(", ")}
+      </div>
+
+    </div>
+
+    <div class="p-5 rounded-2xl bg-orange-50">
+
+      <div class="text-xs text-orange-600 font-bold">
+        CURRENT DOCTOR
+      </div>
+
+      <div class="font-bold mt-2">
+        ${p.doctor.name}
+      </div>
+
+      <div class="text-sm text-slate-500">
+        ${p.doctor.specialty} · ${treatmentDuration(p.doctor.since)} of treatment
+      </div>
+
+    </div>
+
+  `;
+
+  document.getElementById("reviewTranscript").textContent =
+    transcriptSamples[p.language] || transcriptSamples.en;
+
+  document.getElementById("verificationChecklist").innerHTML = [
+
+    "Patient identity verified",
+    "Chief complaints verified",
+    "Duration and onset verified",
+    "Past history reviewed",
+    "Medication list reviewed",
+    "AI summary clinically verified"
+
+  ].map(item => `
+
+    <label class="flex items-center gap-3 p-3 rounded-xl bg-slate-50 cursor-pointer">
+
+      <input type="checkbox" class="w-4 h-4">
+
+      <span class="text-sm font-semibold">
+        ${item}
+      </span>
+
+    </label>
+
+  `).join("");
+}
+
+function approveReview() {
+
+  document.getElementById("reviewStatus").textContent =
+    "Approved by Doctor";
+
+  document.getElementById("reviewStatus").className =
+    "px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold";
+
+  showToast("Case marked as approved for consultation", "success");
+}
+
+function editReview() {
+
+  showPage("case");
+
+  showToast("Case opened for editing");
+}
+
+function flagReview() {
+
+  document.getElementById("reviewStatus").textContent =
+    "Flagged for Reassessment";
+
+  document.getElementById("reviewStatus").className =
+    "px-3 py-1 rounded-full bg-red-50 text-red-600 text-xs font-bold";
+
+  showToast("Case flagged for reassessment", "danger");
+}
+
+function exportEMR() {
+
+  const p = getPatient();
+
+  showToast(
+    `Demo EMR package prepared for ${p.name}`,
+    "success"
+  );
+}
+
+
+/* ============================================================
+   EMERGENCY
+============================================================ */
+
+function emergency() {
+
+  const p = getPatient();
+
+  const confirmed = confirm(
+    `Emergency workflow for ${p.name}.\n\nThis prototype can simulate an emergency action, but it does NOT place a real emergency call.\n\nContinue?`
+  );
+
+  if (confirmed) {
+
+    showToast(
+      "Emergency workflow simulated. Contact local emergency services directly for a real emergency.",
+      "danger"
+    );
+  }
+}
+
+
+/* ============================================================
+   PAGE NAVIGATION
+============================================================ */
+
+const pageTitles = {
+
+  dashboard: "Patient Dashboard",
+  instanthelp: "Instant Help — Emergency First Aid",
+  intake: "AI Case Intake",
+  case: "Clinical Case",
+  review: "Doctor Review",
+  profile: "Patient Profile",
+  history: "History & Timeline",
+  medications: "Medication Tracker",
+  documents: "Smart Docs / OCR",
+  menstrual: "Menstrual Cycle Tracker",
+  vaccination: "Vaccination Tracker",
+  risk: "Risk Screening",
+  body: "Body & Symptoms",
+  doctors: "Available Doctors",
+  ayush: "Allopathy / AYUSH",
+  settings: "Settings"
+};
+
+function showPage(page) {
+
+  /* Safety: patient-specific pages cannot be accessed for wrong profile */
+
+  const p = getPatient();
+
+  if (page === "menstrual" && p.type !== "female") {
+
+    showToast("Menstrual Cycle Tracker is only available for a female patient profile.", "danger");
+    return;
+  }
+
+  if (page === "vaccination" && p.type !== "baby") {
+
+    showToast("Vaccination Tracker is only available for a baby patient profile.", "danger");
+    return;
+  }
+
+  currentPage = page;
+
+  document.querySelectorAll(".page").forEach(section => {
+    section.classList.add("hidden-page");
+  });
+
+  const target = document.getElementById(`page-${page}`);
+
+  if (target) {
+    target.classList.remove("hidden-page");
+  }
+
+  document.querySelectorAll(".nav-item").forEach(item => {
+    item.classList.remove("active");
+
+    if (item.dataset.page === page) {
+      item.classList.add("active");
+    }
+  });
+
+  document.getElementById("pageTitle").textContent =
+    pageTitles[page] || "TECHCARE AI";
+
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth"
+  });
+
+  /* Render page-specific information */
+
+  if (page === "dashboard") renderDashboard();
+  if (page === "instanthelp") renderInstantHelp();
+  if (page === "intake") updateIntakeLanguage();
+  if (page === "case") renderClinicalCase();
+  if (page === "review") renderReview();
+  if (page === "profile") renderProfile();
+  if (page === "history") renderTimeline();
+  if (page === "medications") renderMedications();
+  if (page === "documents") renderOCR();
+  if (page === "menstrual") renderMenstrual();
+  if (page === "vaccination") renderVaccination();
+  if (page === "risk") renderRisk();
+  if (page === "doctors") renderDoctors();
+}
+
+document.querySelectorAll(".nav-item").forEach(button => {
+
+  button.addEventListener("click", () => {
+
+    showPage(button.dataset.page);
+
+  });
+
+});
+
+
+/* ============================================================
+   COMPLETE RENDER
+============================================================ */
+
+function renderAll() {
+
+  const p = getPatient();
+
+  document.body.classList.remove(
+    "male-theme",
+    "female-theme",
+    "baby-theme"
+  );
+
+  document.body.classList.add(`${p.type}-theme`);
+
+  renderTopBar();
+  renderSidebarPatient();
+  renderPatientSpecificMenu();
+
+  document.getElementById("languageSelect").value =
+    p.language;
+
+  updateIntakeLanguage();
+
+  renderDashboard();
+  renderClinicalCase();
+  renderProfile();
+  renderTimeline();
+  renderMedications();
+  renderOCR();
+  renderMenstrual();
+  renderVaccination();
+  renderRisk();
+  renderDoctors();
+  renderReview();
+
+  /* Preserve currently selected page after switching patient */
+  if (
+    (currentPage === "menstrual" && p.type !== "female") ||
+    (currentPage === "vaccination" && p.type !== "baby")
+  ) {
+    currentPage = "dashboard";
+  }
+
+  showPage(currentPage);
+}
+
+
+/* ============================================================
+   INITIALIZE
+============================================================ */
+
+
+/* ============================================================
+   DARK / LIGHT MODE
+============================================================ */
+
+function applyTheme(mode) {
+
+  const dark = mode === "dark";
+
+  document.documentElement.classList.toggle("dark", dark);
+
+  const icon = document.getElementById("themeIcon");
+  if (icon) icon.textContent = dark ? "☀" : "🌙";
+
+  try { localStorage.setItem("techcare-theme", mode); } catch (e) {}
+}
+
+function toggleTheme() {
+
+  const dark = document.documentElement.classList.contains("dark");
+
+  applyTheme(dark ? "light" : "dark");
+
+  showToast(dark ? "Light mode enabled" : "Dark mode enabled", "info");
+}
+
+(function initTheme() {
+
+  let saved = null;
+  try { saved = localStorage.getItem("techcare-theme"); } catch (e) {}
+
+  if (!saved) {
+    saved = window.matchMedia &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark" : "light";
+  }
+
+  applyTheme(saved);
+})();
+
+
+/* ============================================================
+   INSTANT HELP — AI EMERGENCY GUIDANCE
+============================================================ */
+
+const instantHelpData = [
+  {
+    id: "heart-attack",
+    name: "Heart Attack",
+    icon: "❤️",
+    level: "critical",
+    window: "Act within minutes",
+    signs: ["Crushing chest pain or pressure", "Pain to left arm, jaw or back", "Cold sweat, nausea, breathlessness"],
+    steps: [
+      "Call 112 / 108 immediately and say 'suspected heart attack'.",
+      "Sit the person down, back supported, knees bent. Loosen tight clothing.",
+      "If not allergic and no bleeding disorder, give one 300 mg aspirin to chew slowly.",
+      "Help them take their own prescribed nitroglycerin if they have it.",
+      "If they stop responding and are not breathing normally, start hard fast chest compressions (100–120/min) and use an AED if available."
+    ],
+    avoid: ["Do not let them walk or drive themselves", "Do not give food or water", "Do not delay to 'wait and see'"]
+  },
+  {
+    id: "stroke",
+    name: "Stroke (Brain Attack)",
+    icon: "🧠",
+    level: "critical",
+    window: "Golden hour — note the exact start time",
+    signs: ["Face drooping on one side", "Arm weakness or numbness", "Slurred or confused speech", "Sudden blurred vision or loss of balance"],
+    steps: [
+      "Use F.A.S.T. — Face, Arms, Speech, Time. Any one sign means call 112 / 108 now.",
+      "Write down the exact time the symptoms began — treatment depends on it.",
+      "Lay the person on their side with head and shoulders slightly raised.",
+      "Keep them still, warm and reassured; loosen tight clothing.",
+      "Monitor breathing; be ready to start CPR if they stop responding."
+    ],
+    avoid: ["Nothing to eat or drink — swallowing may be unsafe", "No aspirin (a bleed cannot be ruled out)", "Do not let them sleep it off"]
+  },
+  {
+    id: "seizure",
+    name: "Seizure / Fits",
+    icon: "⚡",
+    level: "urgent",
+    window: "Most stop within 2–3 minutes",
+    signs: ["Sudden collapse with stiff, jerking limbs", "Eyes rolled up, frothing", "Loss of awareness, then deep confusion"],
+    steps: [
+      "Stay with them and start timing the seizure.",
+      "Clear hard objects away; cushion the head with something soft.",
+      "Once the jerking stops, roll them onto their side (recovery position).",
+      "Loosen anything tight around the neck and check breathing.",
+      "Call 112 / 108 if it lasts over 5 minutes, repeats, or if it is a first seizure, a pregnancy, an injury, or they do not wake up."
+    ],
+    avoid: ["Never put fingers, spoons or water in the mouth", "Do not hold the limbs down", "Do not give medicines until fully awake"]
+  },
+  {
+    id: "low-bp",
+    name: "Low Blood Pressure / Fainting",
+    icon: "🩸",
+    level: "stable",
+    window: "Usually improves in 10–15 minutes",
+    signs: ["Dizziness, blurred vision on standing", "Pale, clammy skin, weak fast pulse", "Nausea, fainting, poor concentration"],
+    steps: [
+      "Lay them flat and raise the legs about 30 cm above heart level.",
+      "Loosen tight clothing and give fresh air / open a window.",
+      "Once fully awake, give slow sips of water with a pinch of salt and sugar (ORS is ideal).",
+      "Let them rest 10–15 minutes, then stand up slowly in stages.",
+      "Recheck BP. Call for help if the top reading stays under 90, or with chest pain, black stools, bleeding or confusion."
+    ],
+    avoid: ["Do not stand them up quickly", "No alcohol, hot baths or heavy meals", "Do not stop prescribed BP medicines without the doctor"]
+  },
+  {
+    id: "panic-attack",
+    name: "Panic Attack",
+    icon: "🌪️",
+    level: "stable",
+    window: "Peaks in ~10 minutes, then eases",
+    signs: ["Racing heart, chest tightness", "Rapid breathing, tingling hands, shaking", "Fear of dying or losing control"],
+    steps: [
+      "Move to a quiet place and tell them calmly: 'You are safe, this will pass.'",
+      "Coach slow breathing — in for 4, hold for 4, out for 6 — breathe along with them.",
+      "Use grounding 5-4-3-2-1: name 5 things seen, 4 felt, 3 heard, 2 smelt, 1 tasted.",
+      "Let them sip water and unclench shoulders and jaw.",
+      "Once settled, log the trigger in the case notes and share it with the treating doctor."
+    ],
+    avoid: ["Do not say 'calm down' or crowd them", "No paper-bag breathing", "Do not dismiss it — rule out cardiac causes if pain persists"]
+  },
+  {
+    id: "choking",
+    name: "Choking",
+    icon: "🫁",
+    level: "critical",
+    window: "Seconds matter",
+    signs: ["Hands clutching the throat", "Cannot speak, cough or breathe", "Lips turning blue"],
+    steps: [
+      "If they can cough, encourage hard coughing and do nothing else.",
+      "If silent: give 5 firm back blows between the shoulder blades with the heel of your hand.",
+      "Then give 5 abdominal thrusts (Heimlich) just above the navel. Alternate 5 and 5.",
+      "For infants under 1 year: 5 back blows then 5 two-finger chest thrusts — no abdominal thrusts.",
+      "If they collapse, call 112 / 108 and begin CPR."
+    ],
+    avoid: ["Do not do blind finger sweeps", "Do not give water", "Do not leave them alone"]
+  },
+  {
+    id: "severe-bleeding",
+    name: "Severe Bleeding",
+    icon: "🩹",
+    level: "critical",
+    window: "Control within the first minutes",
+    signs: ["Blood soaking through cloth fast", "Spurting wound", "Pale, cold, drowsy, fast pulse"],
+    steps: [
+      "Wear gloves if available and call 112 / 108.",
+      "Press hard directly on the wound with a clean cloth and keep pressing.",
+      "Add more cloth on top if it soaks through — never remove the first layer.",
+      "Raise the injured part above heart level if there is no fracture.",
+      "Keep them warm and lying down; use a tourniquet high above a limb wound only if bleeding cannot be stopped."
+    ],
+    avoid: ["Do not remove an embedded object — pad around it", "Do not wash a deep wound", "Do not loosen a placed tourniquet"]
+  },
+  {
+    id: "hypoglycemia",
+    name: "Low Blood Sugar",
+    icon: "🍬",
+    level: "urgent",
+    window: "Treat within 15 minutes",
+    signs: ["Shaking, sweating, intense hunger", "Confusion, irritability, slurred speech", "Sugar reading below 70 mg/dL"],
+    steps: [
+      "If awake and able to swallow, give 15 g fast sugar: 3 teaspoons sugar in water, glucose or juice.",
+      "Wait 15 minutes and recheck the sugar reading.",
+      "Repeat once if still below 70 mg/dL.",
+      "Once normal, give a proper snack or meal with protein.",
+      "If unconscious or fitting, call 112 / 108, place on their side and give nothing by mouth."
+    ],
+    avoid: ["Never force food into a drowsy person", "No diet or sugar-free drinks", "Do not skip the recheck"]
+  },
+  {
+    id: "anaphylaxis",
+    name: "Severe Allergic Reaction",
+    icon: "🐝",
+    level: "critical",
+    window: "Adrenaline within minutes",
+    signs: ["Swelling of lips, tongue or throat", "Wheezing, tight chest, hoarse voice", "Widespread rash, collapse"],
+    steps: [
+      "Use their adrenaline auto-injector into the outer thigh at once, then call 112 / 108.",
+      "Lay them flat with legs raised; sit up only if breathing is hard.",
+      "Remove the trigger (sting, food, drug) if it is safe to do so.",
+      "A second dose may be given after 5 minutes if there is no improvement.",
+      "Every case needs hospital observation — symptoms can return hours later."
+    ],
+    avoid: ["Do not let them stand or walk", "Do not rely on antihistamines alone", "Do not delay adrenaline"]
+  },
+  {
+    id: "burns",
+    name: "Burns & Scalds",
+    icon: "🔥",
+    level: "urgent",
+    window: "Cool for a full 20 minutes",
+    signs: ["Red, blistered or white leathery skin", "Severe pain, or no pain in deep burns", "Swelling around the burn"],
+    steps: [
+      "Move away from the heat source and cool the burn under cool running water for 20 minutes.",
+      "Remove rings, watches and tight clothing near the burn before swelling starts.",
+      "Cover loosely with cling film or a clean non-fluffy cloth.",
+      "Keep the rest of the body warm — cooling can drop temperature, especially in children.",
+      "Go to hospital for burns bigger than the palm, or on face, hands, joints or genitals."
+    ],
+    avoid: ["No ice, toothpaste, oil or butter", "Do not burst blisters", "Do not peel off stuck clothing"]
+  }
+];
+
+const instantLevels = {
+  critical: { label: "Critical", note: "Call emergency services now" },
+  urgent:   { label: "Urgent",   note: "Act fast, monitor closely" },
+  stable:   { label: "Manageable", note: "Support and observe" }
+};
+
+let instantFilter = "all";
+
+function setInstantFilter(level) {
+  instantFilter = level;
+  renderInstantHelp();
+}
+
+function renderInstantHelp() {
+
+  const filters = document.getElementById("instantFilters");
+
+  if (filters) {
+
+    const options = [
+      ["all", "All", "#334155"],
+      ["critical", "Critical", "#b91c1c"],
+      ["urgent", "Urgent", "#a16207"],
+      ["stable", "Manageable", "#15803d"]
+    ];
+
+    filters.innerHTML = options.map(([key, label, color]) => `
+      <button onclick="setInstantFilter('${key}')"
+              class="px-4 py-2 rounded-2xl text-xs font-bold border"
+              style="border-color:${color};color:${instantFilter === key ? "#fff" : color};background:${instantFilter === key ? color : "transparent"}">
+        ${label}
+      </button>
+    `).join("");
+  }
+
+  const searchEl = document.getElementById("instantSearch");
+  const q = (searchEl ? searchEl.value : "").trim().toLowerCase();
+
+  const list = instantHelpData.filter(item => {
+
+    const levelOk = instantFilter === "all" || item.level === instantFilter;
+
+    const textOk = !q ||
+      item.name.toLowerCase().includes(q) ||
+      item.signs.join(" ").toLowerCase().includes(q) ||
+      item.steps.join(" ").toLowerCase().includes(q);
+
+    return levelOk && textOk;
+  });
+
+  const grid = document.getElementById("instantHelpGrid");
+  if (!grid) return;
+
+  if (!list.length) {
+    grid.innerHTML = `
+      <div class="col-span-full rounded-3xl bg-white border border-slate-200 p-8 text-center text-sm text-slate-400">
+        No emergency guide matched that search.
+      </div>`;
+    return;
+  }
+
+  grid.innerHTML = list.map(item => `
+
+    <div class="ih-card ih-${item.level} rounded-3xl bg-white border border-slate-200 shadow-card p-5">
+
+      <div class="flex items-start justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-2xl flex items-center justify-center text-xl ih-chip">${item.icon}</div>
+          <div>
+            <div class="font-black leading-tight">${item.name}</div>
+            <div class="text-[11px] text-slate-400 mt-[2px]">${item.window}</div>
+          </div>
+        </div>
+        <span class="ih-chip text-[10px] font-black px-3 py-1 rounded-full whitespace-nowrap">
+          ${instantLevels[item.level].label.toUpperCase()}
+        </span>
+      </div>
+
+      <div class="h-1 rounded-full ih-bar mt-4 opacity-80"></div>
+
+      <div class="mt-4">
+        <div class="text-[10px] font-bold tracking-widest text-slate-400">RECOGNISE</div>
+        <div class="flex flex-wrap gap-2 mt-2">
+          ${item.signs.map(sg => `<span class="text-[11px] px-2 py-1 rounded-lg bg-slate-50 border border-slate-100">${sg}</span>`).join("")}
+        </div>
+      </div>
+
+      <div class="mt-4">
+        <div class="text-[10px] font-bold tracking-widest text-slate-400">DO THIS NOW</div>
+        <ol class="mt-2 space-y-2">
+          ${item.steps.map((st, i) => `
+            <li class="flex gap-3 text-[13px] leading-snug">
+              <span class="w-5 h-5 rounded-full ih-chip text-[10px] font-black flex items-center justify-center shrink-0">${i + 1}</span>
+              <span>${st}</span>
+            </li>`).join("")}
+        </ol>
+      </div>
+
+      <div class="mt-4 rounded-2xl p-3 ih-chip">
+        <div class="text-[10px] font-black tracking-widest ih-accent">NEVER DO</div>
+        <ul class="mt-1 space-y-1 text-[12px]">
+          ${item.avoid.map(a => `<li>• ${a}</li>`).join("")}
+        </ul>
+      </div>
+
+      <div class="mt-4 flex gap-2">
+        <a href="tel:112" class="flex-1 text-center px-3 py-2 rounded-xl text-white text-xs font-bold ih-bar">
+          Call 112 / 108
+        </a>
+        <button onclick="showPage('doctors')"
+                class="flex-1 px-3 py-2 rounded-xl text-xs font-bold border border-slate-200">
+          Reach a doctor
+        </button>
+      </div>
+
+      <div class="text-[10px] text-slate-400 mt-3">
+        ${instantLevels[item.level].note} · First-aid guidance, not a diagnosis.
+      </div>
+
+    </div>
+  `).join("");
+}
+
+renderInstantHelp();
+
+
+renderAll();
+
+</script>
+
+
+<!-- ===== Lovable Cloud: doctor account, case saving & saved-case list (additive only) ===== -->
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+let sb = null;
+let doctorEmail = "";
+let authenticatedUserId = "";
+let authenticatedRole = "";
+
+function esc(v){ return String(v == null ? "" : v).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+window.addEventListener("message", async (event) => {
+  if (event.origin !== window.location.origin) return;
+  const d = event.data || {};
+  if (d.type !== "techcare-session" || sb) return;
+  sb = createClient(d.supabaseUrl, d.supabaseKey, { auth: { persistSession: false, autoRefreshToken: false } });
+  await sb.auth.setSession({ access_token: d.access_token, refresh_token: d.refresh_token });
+  doctorEmail = d.email || "";
+  authenticatedUserId = d.user_id || "";
+  authenticatedRole = d.role || "";
+  const accountNumber = String(doctorEmail).match(/(?:patient|doctor)([123])@/i)?.[1];
+  if (accountNumber) {
+    currentPatientId = ({ "1": "rahul", "2": "priya", "3": "aarav" })[accountNumber] || "rahul";
+    renderAll();
+  }
+  await renderAuthenticatedIdentity();
+  buildUI();
+  loadCases();
+});
+
+parent.postMessage({ type: "techcare-ready" }, window.location.origin);
+
+function currentPatient(){
+  try { return getPatient() || {}; } catch (e) { return {}; }
+}
+
+async function renderAuthenticatedIdentity(){
+  const nameEl = document.getElementById("accountName");
+  const metaEl = document.getElementById("accountMeta");
+  const avatarEl = document.getElementById("accountAvatar");
+  if (!sb || !authenticatedUserId || !nameEl || !metaEl || !avatarEl) return;
+  const { data: profile } = await sb.from("profiles")
+    .select("full_name, age, gender, phone")
+    .eq("user_id", authenticatedUserId)
+    .maybeSingle();
+  const fullName = profile?.full_name || doctorEmail || "Signed-in user";
+  const initials = fullName.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join("").toUpperCase();
+  const details = [authenticatedRole ? authenticatedRole[0].toUpperCase() + authenticatedRole.slice(1) : "Member", profile?.age ? `${profile.age} yrs` : "", profile?.gender || ""].filter(Boolean);
+  nameEl.textContent = fullName;
+  metaEl.textContent = details.join(" · ");
+  avatarEl.textContent = initials || "TC";
+  if (authenticatedRole === "patient") {
+    const patient = currentPatient();
+    patient.name = fullName;
+    patient.initials = initials || patient.initials;
+    if (profile?.age) patient.age = profile.age;
+    if (profile?.gender) patient.gender = profile.gender;
+    renderAll();
+  }
+}
+
+document.getElementById("headerSignOut").addEventListener("click", async () => {
+  const button = document.getElementById("headerSignOut");
+  button.disabled = true;
+  button.querySelector("span:last-child").textContent = "Logging out…";
+  if (sb) await sb.auth.signOut();
+  sb = null;
+  authenticatedUserId = "";
+  authenticatedRole = "";
+  doctorEmail = "";
+  parent.postMessage({ type: "techcare-signout" }, window.location.origin);
+});
+
+function saveCard(pageId, sourceLabel){
+  const host = document.getElementById(pageId);
+  if (!host || host.querySelector(".tc-save-card")) return;
+  const p = currentPatient();
+  const symptoms = [(p.chiefComplaints || []).join(", "), p.duration ? ("Duration: " + p.duration) : "", p.severity ? ("Severity: " + p.severity) : ""].filter(Boolean).join(" · ");
+  const wrap = document.createElement("div");
+  wrap.className = "tc-save-card mt-6 bg-white rounded-3xl border border-slate-100 shadow-card p-6";
+  wrap.innerHTML = `
+    <div class="flex items-center justify-between gap-3 flex-wrap">
+      <div>
+        <div class="text-xs font-bold text-teal-600 uppercase tracking-wider">Save to my patient records</div>
+        <h2 class="font-black text-lg mt-1">${esc(sourceLabel)}</h2>
+      </div>
+      <div class="text-[11px] text-slate-400">Saved privately under ${esc(doctorEmail)}</div>
+    </div>
+    <div class="grid md:grid-cols-3 gap-3 mt-5">
+      <input data-f="patient_name" value="${esc(p.name || "")}" placeholder="Patient name"
+             class="px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-sm outline-none" />
+      <input data-f="age" type="number" value="${esc(p.age || "")}" placeholder="Age"
+             class="px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-sm outline-none" />
+      <input data-f="gender" value="${esc(p.gender || "")}" placeholder="Gender"
+             class="px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-sm outline-none" />
+    </div>
+    <textarea data-f="symptoms" rows="2" placeholder="Symptoms"
+      class="w-full mt-3 px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-sm outline-none">${esc(symptoms)}</textarea>
+    <textarea data-f="diagnosis" rows="2" placeholder="Diagnosis / clinical impression"
+      class="w-full mt-3 px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-sm outline-none"></textarea>
+    <textarea data-f="vitals" rows="2" placeholder="Vitals (BP, pulse, temperature, SpO2)"
+      class="w-full mt-3 px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-sm outline-none"></textarea>
+    <div class="mt-4 flex items-center gap-3 flex-wrap">
+      <button type="button" class="px-5 py-3 rounded-xl bg-slate-950 text-white text-sm font-bold">Save patient case</button>
+      <span class="text-[12px] text-slate-400 tc-status"></span>
+    </div>`;
+  host.appendChild(wrap);
+
+  const status = wrap.querySelector(".tc-status");
+  wrap.querySelector("button").addEventListener("click", async () => {
+    if (!sb) return;
+    const val = f => { const el = wrap.querySelector(`[data-f="${f}"]`); return el ? el.value.trim() : ""; };
+    if (!val("patient_name")) { status.textContent = "Patient name is required."; return; }
+    status.textContent = "Saving…";
+    const { error } = await sb.from("patient_cases").insert({
+      patient_name: val("patient_name"),
+      age: val("age") ? Number(val("age")) : null,
+      gender: val("gender") || null,
+      symptoms: val("symptoms") || null,
+      diagnosis: val("diagnosis") || null,
+      vitals: val("vitals") || null,
+      source: sourceLabel
+    });
+    if (error) { status.textContent = "Could not save: " + error.message; return; }
+    status.textContent = "Saved to your records.";
+    try { showToast("Patient case saved", "success"); } catch (e) {}
+    loadCases();
+  });
+}
+
+function accountBar(){
+  const host = document.getElementById("page-dashboard");
+  if (!host || document.getElementById("tcAccountBar")) return;
+  const bar = document.createElement("div");
+  bar.id = "tcAccountBar";
+  bar.className = "mt-6 bg-white rounded-3xl border border-slate-100 shadow-card p-5 flex items-center justify-between gap-3 flex-wrap";
+  bar.innerHTML = `
+    <div>
+      <div class="text-[11px] font-black tracking-widest text-slate-400">SIGNED IN AS</div>
+      <div class="font-black mt-1">${esc(doctorEmail)}</div>
+      <div class="text-[12px] text-slate-400 mt-1">You can only see patient cases saved with this login.</div>
+    </div>
+    <button type="button" id="tcSignOut" class="px-4 py-2 rounded-xl bg-slate-100 text-slate-800 text-sm font-bold">Sign out</button>`;
+  host.appendChild(bar);
+  document.getElementById("tcSignOut").addEventListener("click", async () => {
+    if (sb) await sb.auth.signOut();
+    parent.postMessage({ type: "techcare-signout" }, window.location.origin);
+  });
+}
+
+function casesPanel(){
+  const host = document.getElementById("page-dashboard");
+  if (!host || document.getElementById("tcCasesPanel")) return;
+  const panel = document.createElement("div");
+  panel.id = "tcCasesPanel";
+  panel.className = "mt-6 bg-white rounded-3xl border border-slate-100 shadow-card p-6";
+  panel.innerHTML = `
+    <div class="flex items-center justify-between gap-3 flex-wrap">
+      <div>
+        <div class="text-xs font-bold text-teal-600 uppercase tracking-wider">My saved patient cases</div>
+        <h2 class="font-black text-lg mt-1">Stored securely in your account</h2>
+      </div>
+      <button type="button" id="tcRefreshCases" class="px-4 py-2 rounded-xl bg-slate-100 text-slate-800 text-sm font-bold">Refresh</button>
+    </div>
+    <div id="tcCasesList" class="mt-5 space-y-3 text-sm text-slate-400">Loading your saved cases…</div>`;
+  host.appendChild(panel);
+  document.getElementById("tcRefreshCases").addEventListener("click", loadCases);
+}
+
+async function loadCases(){
+  const list = document.getElementById("tcCasesList");
+  if (!sb || !list) return;
+  const { data, error } = await sb.from("patient_cases")
+    .select("id, created_at, patient_name, age, gender, symptoms, diagnosis, vitals, source")
+    .order("created_at", { ascending: false });
+  if (error) { list.innerHTML = `<div class="text-sm text-red-500">Could not load cases: ${esc(error.message)}</div>`; return; }
+  if (!data || !data.length) { list.innerHTML = `<div class="text-sm text-slate-400">No saved cases yet. Save one from Case Intake, Clinical Case or Doctor Review.</div>`; return; }
+  list.innerHTML = data.map(c => `
+    <div class="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+      <div class="flex justify-between gap-3 flex-wrap">
+        <div class="font-black text-slate-900">${esc(c.patient_name)}
+          <span class="text-[12px] font-medium text-slate-400">${c.age ? esc(c.age) + " yrs" : ""} ${c.gender ? "· " + esc(c.gender) : ""}</span>
+        </div>
+        <div class="text-[11px] text-slate-400">${new Date(c.created_at).toLocaleString()} ${c.source ? "· " + esc(c.source) : ""}</div>
+      </div>
+      ${c.symptoms ? `<div class="text-[13px] text-slate-600 mt-2"><b>Symptoms:</b> ${esc(c.symptoms)}</div>` : ""}
+      ${c.diagnosis ? `<div class="text-[13px] text-slate-600 mt-1"><b>Diagnosis:</b> ${esc(c.diagnosis)}</div>` : ""}
+      ${c.vitals ? `<div class="text-[13px] text-slate-600 mt-1"><b>Vitals:</b> ${esc(c.vitals)}</div>` : ""}
+    </div>`).join("");
+}
+
+function buildUI(){
+  accountBar();
+  casesPanel();
+  saveCard("page-intake", "AI Case Intake");
+  saveCard("page-case", "Clinical Case");
+  saveCard("page-review", "Doctor Review");
+}
+</script>
+
+</body>
+</html>
