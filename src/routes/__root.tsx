@@ -77,14 +77,20 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "TECHCARE AI — Clinical Patient Care & Instant Help" },
+      {
+        name: "description",
+        content:
+          "TECHCARE AI: AI-assisted patient intake, clinical case review, doctor matching and instant emergency first-aid guidance.",
+      },
+      { property: "og:title", content: "TECHCARE AI — Clinical Patient Care & Instant Help" },
+      {
+        property: "og:description",
+        content:
+          "AI-assisted patient intake, clinical review, doctor matching and instant first-aid guidance for emergencies.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
       {
