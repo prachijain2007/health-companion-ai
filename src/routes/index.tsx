@@ -8,6 +8,13 @@ export const Route = createFileRoute("/")({
   beforeLoad: async () => {
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) throw redirect({ to: "/login" });
+
+    const [{ data: roles }, { data: profile }] = await Promise.all([
+      supabase.from("user_roles").select("role").eq("user_id", data.user.id),
+      supabase.from("profiles").select("id").eq("user_id", data.user.id).maybeSingle(),
+    ]);
+    if ((roles ?? []).length === 0 || !profile) throw redirect({ to: "/onboarding" });
+
     return { user: data.user };
   },
   head: () => ({
